@@ -526,6 +526,29 @@ body[data-theme=dark] .native-photo:nth-child(3){background:#434259;color:#cbc7e
 .native-photo .photo-geom:after{content:'';position:absolute;left:5px;bottom:7px;width:23px;height:13px;border-top:1.7px solid currentColor;transform:rotate(-29deg);opacity:.85}
 .native-photo:active{transform:scale(.98)}
 
+
+/* Web game runs INSIDE an actual mobile browser: avoid duplicated bottom gestures. */
+.home-gesture{display:none!important}
+.statusbar{height:32px!important;min-height:32px!important;padding:7px 16px 0 18px!important;font-size:10.5px!important;line-height:1!important;font-weight:500!important;letter-spacing:0!important;align-items:flex-start!important}
+.status-icons{height:11px!important;gap:4px!important}
+.status-icons svg{max-height:11px!important;width:auto!important}
+.screen{padding-top:33px!important;padding-bottom:0!important}
+@media(max-width:520px){.statusbar{height:32px!important;padding:7px 16px 0 18px!important}.screen{padding-top:33px!important;padding-bottom:env(safe-area-inset-bottom)!important}}
+@media(min-width:521px){.statusbar{padding:7px 22px 0 24px!important}}
+.title-cover .title-menu{display:flex;flex-direction:column;gap:11px;width:100%;max-width:272px;margin-top:28px}
+.title-cover .title-menu button{width:100%;min-height:45px;border-radius:11px;margin:0;font-size:14px;letter-spacing:.04em;font-weight:600}
+.title-cover .title-menu .title-new{background:#f2dce3;color:#40333e}
+.title-cover .title-menu .title-continue{background:#ffffff12;border:1px solid #e0cbd178;color:#f6e5ee}
+.title-cover .title-menu .title-continue:disabled{opacity:.36;cursor:default}
+.save-prompt{position:absolute;inset:0;z-index:101;background:#0a090db9;display:grid;place-items:center;padding:20px}
+.save-prompt>div{width:100%;max-width:315px;background:#f8f5f8;color:#342b35;border-radius:16px;padding:25px 20px;text-align:center;box-shadow:0 25px 90px #0008}
+.save-prompt h3{margin:0 0 12px;font-size:18px}.save-prompt p{font-size:13px;line-height:1.8;color:#776d77}
+.save-prompt button{display:block;width:100%;padding:12px;border-radius:10px;margin-top:10px;background:#eecedb;color:#493a46;font-weight:650}
+.save-prompt button:last-child{background:#ece7ed}
+body[data-theme=dark] .save-prompt>div{background:#292831;color:#f0eaf0}
+body[data-theme=dark] .save-prompt p{color:#aaa1ad}
+/* No end-of-chapter forcing: keep the chat input shell once Day 1 dialog is caught up. */
+
 </style>
 </head>
 <body>
@@ -546,16 +569,21 @@ body[data-theme=dark] .native-photo:nth-child(3){background:#434259;color:#cbc7e
   <script>
 
 const view=document.querySelector('#view'), overlay=document.querySelector('#overlay-root');
-const defaultState={page:'intro',day:1,stage:0,checked:false,reply:false,replyChoice:0,stress:8,trust:70,clues:0,tab:'微信',playerId:'',avatar:0,profileDraft:'',theme:'dark',navStack:[],messageSpeed:2200,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0};
+const defaultState={page:'intro',day:1,stage:0,checked:false,reply:false,replyChoice:0,stress:8,trust:70,clues:0,tab:'微信',playerId:'',avatar:0,profileDraft:'',theme:'dark',navStack:[],messageSpeed:2200,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false};
 let storedState={};
 try{storedState=JSON.parse(localStorage.getItem('resident_register_v1')||'{}')||{}}catch(e){}
-const state={...defaultState,...storedState,page:'intro',navStack:[],phoneActivated:false};
+const state={...defaultState,...storedState,page:'intro',navStack:[],phoneActivated:false,playerId:'',avatar:0,profileDraft:''};
 let hasSavedTheme=false;try{hasSavedTheme=!!localStorage.getItem('resident_theme_set_v8')}catch(e){}
 state.theme=hasSavedTheme? (state.theme==='light'?'light':'dark') : 'dark';
 state.messageSpeed=([700,1600,3000].includes(state.messageSpeed)?{700:1000,1600:2200,3000:3600}[state.messageSpeed]:state.messageSpeed); state.messageSpeed=[1000,2200,3600].includes(state.messageSpeed)?state.messageSpeed:2200;
-let narrativeTimer=null, bannerTimer=null, neighborTimer=null;
-function cancelNarrative(){if(narrativeTimer){clearTimeout(narrativeTimer);narrativeTimer=null}if(neighborTimer){clearTimeout(neighborTimer);neighborTimer=null}}
-function groupMessageCount(){return Math.max(0,Math.min(7,Number(state.stage)||0))}
+let narrativeTimer=null, bannerTimer=null, neighborTimer=null, groupReactionTimer=null;
+const SAVE_KEY='resident_registration_save_v2';
+function readSave(){try{const obj=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');return obj&&typeof obj==='object'&&obj.playerId&&validId(obj.playerId)?obj:null}catch(e){return null}}
+function hasContinueSave(){return !!readSave()}
+function persistSave(){if(!state.playerId||!validId(state.playerId)||state.page==='intro'||state.page==='warning'||state.page==='profile')return;try{localStorage.setItem(SAVE_KEY,JSON.stringify({...state,navStack:Array.isArray(state.navStack)?state.navStack.slice(-30):[]}))}catch(e){}}
+
+function cancelNarrative(){if(narrativeTimer){clearTimeout(narrativeTimer);narrativeTimer=null}if(neighborTimer){clearTimeout(neighborTimer);neighborTimer=null}if(groupReactionTimer){clearTimeout(groupReactionTimer);groupReactionTimer=null}}
+function groupMessageCount(){return Math.max(0,Math.min(7,Number(state.stage)||0))+(state.groupReactionReady?1:0)}
 function neighborMessageCount(){
  const s=Number(state.yutongStage)||0;
  let c=0;
@@ -595,6 +623,19 @@ function scheduleGroupNarrative(){
  const ms=state.stage===0?Math.max(Number(state.messageSpeed)||2200, (Number(state.phoneStartAt)||Date.now())+3600-Date.now()):Math.max(700,Number(state.messageSpeed)||2200);
  narrativeTimer=setTimeout(advanceGroupMessage,ms);
 }
+function scheduleGroupReaction(){
+ if(groupReactionTimer){clearTimeout(groupReactionTimer);groupReactionTimer=null}
+ if(!state.phoneActivated||!state.groupReactionPending||state.groupReactionReady||![1,2].includes(state.replyChoice))return;
+ groupReactionTimer=setTimeout(()=>{
+   groupReactionTimer=null;
+   if(!state.groupReactionPending||state.groupReactionReady)return;
+   state.groupReactionReady=true;state.groupReactionPending=false;
+   if(state.page==='chat')state.groupReadStage=groupMessageCount();
+   store();
+   if(!isViewingTarget('chat'))banner(T('群聊回复反馈'+state.replyChoice+'正文'),T('群聊回复反馈'+state.replyChoice+'发言人'),'chat');
+   render();
+ },Math.max(900,Number(state.messageSpeed)||2200));
+}
 function advanceNeighborMessage(){
  if(!state.phoneActivated)return;
  const current=Number(state.yutongStage)||0;
@@ -623,8 +664,8 @@ function banner(message,from='微信',target='chat'){
  clearTimeout(bannerTimer);bannerTimer=setTimeout(()=>{if(b.isConnected)b.remove()},Math.max(5200,Math.min(9000,(Number(state.messageSpeed)||1600)*3.2)));
 }
 // The profile form starts with the previous chosen ID, but allows editing it.
-state.profileDraft=state.playerId||'';
-const store=()=>{try{localStorage.setItem('resident_register_v1',JSON.stringify(state))}catch(e){}};
+state.profileDraft='';
+const store=()=>{try{localStorage.setItem('resident_register_v1',JSON.stringify(state))}catch(e){}persistSave()};
 
 // 所有可编辑剧情文案都放在同目录的 story.txt。
 const story=Object.create(null);
@@ -652,6 +693,7 @@ function installStory(source){
   render();
   scheduleGroupNarrative();
   scheduleNeighborNarrative();
+  scheduleGroupReaction();
 }
 function showStoryPicker(error){
   document.querySelector('#view').innerHTML=`<div class="cover-game warning"><div class="cover-supra">STORY FILE</div><h1 style="font-size:26px">加载剧情文字</h1><p>${location.protocol==='file:'?'浏览器不允许直接读取本地 TXT 文件。请选择与 index.html 放在一起的 story.txt 文件。':'暂时无法自动读取 story.txt，请确认文件已经上传至 GitHub 仓库根目录，或在此手动选择文件。'}</p><label class="primary" style="cursor:pointer;display:block;padding:14px 18px;border-radius:8px">选择 story.txt<input type="file" accept=".txt,text/plain" style="display:none" onchange="importStoryFile(this)"></label><small>${clean(String(error?.message||''))}</small></div>`;
@@ -751,7 +793,7 @@ function render(){document.body.dataset.theme=state.theme;
  document.querySelector('#home-gesture').classList.toggle('light', ['intro','warning','chapter','scene'].includes(state.page)||state.page==='home'&&state.theme==='dark');
  document.querySelector('#home-gesture').style.display=['intro','warning','profile','chapter','scene'].includes(state.page)?'none':'flex';
  document.querySelector('#statusbar').style.color=['intro','warning','chapter','scene'].includes(state.page)||state.theme==='dark'?'#f5edf1':'#2a2b30';
- if(state.page==='intro'){view.innerHTML=`<div class="cover-game title-cover"><div class="cover-supra">AN INTERACTIVE HORROR STORY</div><h1 class="game-title">${E('游戏名称')}</h1><div class="game-title-rule"></div><p class="game-brief">${L('游戏简介')}</p><button class="title-start" onclick="go('warning')">开始游戏</button><small>规则怪谈 · 手机互动叙事</small></div>`;return}
+ if(state.page==='intro'){view.innerHTML=`<div class="cover-game title-cover"><div class="cover-supra">AN INTERACTIVE HORROR STORY</div><h1 class="game-title">${E('游戏名称')}</h1><div class="game-title-rule"></div><p class="game-brief">${L('游戏简介')}</p><div class="title-menu"><button class="title-new" onclick="startNewGame()">开始新游戏</button><button class="title-continue" onclick="continueGame()" ${hasContinueSave()?'':'disabled'}>继续上次游戏</button></div><small>规则怪谈 · 手机互动叙事</small></div>`;return}
  if(state.page==='warning'){view.innerHTML=`<div class="cover-game warning"><div class="warning-top"><div class="cover-supra">BEFORE YOU ENTER</div><h1>提示</h1><div class="warning-copy">${T('提示').split(/\n\s*\n/).filter(Boolean).map(paragraph=>`<p>${clean(paragraph)}</p>`).join('')}</div></div><div class="warning-bottom"><button class="primary" onclick="go('profile')">我已了解，继续 →</button><small>当前版本为 Day 1 · 交互演示</small></div></div>`;return}
  if(state.page==='profile'){view.innerHTML=`<div class="profile-screen"><div class="profile-content"><span class="profile-kicker">WELCOME, NEW RESIDENT</span><h1>建立住户档案</h1><p class="profile-desc">请先为自己选择头像和 ID。<br>这份资料会出现在你的模拟手机中。</p><p class="profile-label">选择头像</p><div class="avatar-choices">${[1,2,3].map(i=>`<button type="button" class="avatar-choice ${state.avatar===i?'selected':''}" aria-pressed="${state.avatar===i}" onclick="chooseAvatar(${i})">${avatarMark(i)}<b>头像 ${i}</b><small>待细化</small></button>`).join('')}</div><label for="profile-id" class="profile-label">设置 ID</label><div class="profile-field"><input id="profile-id" type="text" autocomplete="off" inputmode="text" spellcheck="false" placeholder="输入 1–4 个汉字" value="${clean(state.profileDraft)}" oninput="updateProfile()" oncompositionend="updateProfile()" aria-describedby="profile-tip" maxlength="8"><span id="profile-count" class="count">${Array.from(state.profileDraft).length}/4</span></div><div id="profile-tip" class="profile-tip">支持简体、繁体，最多 4 个汉字。</div><button id="profile-continue" class="profile-continue" onclick="confirmProfile()" disabled>确认并开始入住 →</button><div class="profile-footnote">头像为临时占位设计，后续可以替换。</div></div></div>`;validateProfile();return}
  if(state.page==='chapter'){view.innerHTML=`<div class="cover-game chapter"><div class="cover-supra">CHAPTER ${String(state.day).padStart(2,'0')}</div><h1>Day ${state.day}</h1><div class="chapter-rule"></div><div class="day-date">${E('Day1日期')}</div><button class="chapter-continue" onclick="go('scene')">点击继续 <span>↗</span></button></div>`;return}
@@ -777,7 +819,8 @@ function render(){document.body.dataset.theme=state.theme;
      if(i===4)chatParts.push(`<div class="day-divide">${E('群公告系统消息')}</div>`);
      chatParts.push(storyMsg(i,i===4||i===7?'house':'friend'));
    }
-   if(state.replyChoice)chatParts.push(msg(state.playerId||'我',T('玩家回复'+state.replyChoice),'renter',true));
+   if(state.replyChoice&&state.replyChoice!==3)chatParts.push(msg(state.playerId||'我',T('玩家回复'+state.replyChoice),'renter',true));
+   if(state.groupReactionReady&&[1,2].includes(state.replyChoice))chatParts.push(msg(T('群聊回复反馈'+state.replyChoice+'发言人'),T('群聊回复反馈'+state.replyChoice+'正文'),'friend'));
    const action=!state.seenAnnouncement&&n>=3?`<div class="reply-area"><div class="reply-hint">${E('群公告操作提示')}</div><button class="reply-option" onclick="openAnnouncement()">查看群公告 →</button></div>`:
      !state.seenAnnouncement?`<div class="chat-compose"><span>⊕</span><input disabled placeholder="有新消息正在进入…"/><span>☺</span></div>`:
      n>=6&&!state.checked?`<div class="reply-area"><div class="reply-hint">${E('查看成员操作提示')}</div><button class="reply-option" onclick="go('members')">查看群成员 →</button></div>`:
@@ -792,9 +835,9 @@ function render(){document.body.dataset.theme=state.theme;
    if(state.yutongStage>=1)parts.push(`<div class="day-divide">今天 20:20</div>`,msg('王雨桐',T('王雨桐新消息1'),'friend'));
    if(state.yutongStage>=2)parts.push(msg('王雨桐',T('王雨桐新消息2'),'friend'));
    if(state.yutongStage>=3)parts.push(msg(state.playerId||'我',T('王雨桐回复'+(state.yutongReply||1)),'renter',true));
-   if(state.yutongStage>=4)parts.push(msg('王雨桐',T('王雨桐后续消息1'),'friend'));
-   if(state.yutongStage>=5)parts.push(msg('王雨桐',T('王雨桐后续消息2'),'friend'));
-   view.innerHTML=`<div class="screen chat-screen"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>王雨桐</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('王雨桐')}')">⋯</button></div><div class="scroll" id="neighbor-scroll"><div class="chat-messages">${parts.join('')}</div></div>${state.yutongStage===2?`<div class="reply-area">${[1,2,3].map(i=>`<button class="reply-option" onclick="replyNeighbor(${i})">${E('王雨桐回复'+i)}</button>`).join('')}</div>`:state.yutongStage>=5?`<div class="reply-area"><button class="reply-option" onclick="go('day-end')">放下手机，结束 Day 1 →</button></div>`:`<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>`}</div>`;
+   if(state.yutongStage>=4)parts.push(msg('王雨桐',T('王雨桐回应'+(state.yutongReply||1)+'第一条')||T('王雨桐后续消息1'),'friend'));
+   if(state.yutongStage>=5)parts.push(msg('王雨桐',T('王雨桐回应'+(state.yutongReply||1)+'第二条')||T('王雨桐后续消息2'),'friend'));
+   view.innerHTML=`<div class="screen chat-screen"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>王雨桐</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('王雨桐')}')">⋯</button></div><div class="scroll" id="neighbor-scroll"><div class="chat-messages">${parts.join('')}</div></div>${state.yutongStage===2?`<div class="reply-area">${[1,2,3].map(i=>`<button class="reply-option" onclick="replyNeighbor(${i})">${E('王雨桐回复'+i)}</button>`).join('')}</div>`:state.yutongStage>=5?`<div class="chat-compose"><span>⊕</span><input disabled placeholder="暂无其他消息"/><span>☺</span></div>`:`<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>`}</div>`;
    document.querySelector('#neighbor-scroll').scrollTop=9999;return;
  }
  if(state.page==='members'){
@@ -809,7 +852,7 @@ function render(){document.body.dataset.theme=state.theme;
  if(state.page==='access'){view.innerHTML=`${header('门禁记录','property')}<div class="scroll">${T('门禁记录').split('\n').filter(Boolean).map(line=>{const a=line.split('|');return `<div class="log-item ${a[2]&&a[2].includes('未登记')?'anomaly':''}"><span class="log-line"></span><div class="log-info"><strong>${clean(a[1]||'')}</strong><p>${clean(a[2]||'')}</p></div><span class="log-time">${clean(a[0]||'')}</span></div>`}).join('')}</div>`;return}
  if(state.page==='contact-profile'){
    const person=getPerson(state.person),noData=person.key==='物业通知';
-   view.innerHTML=`${header('个人信息','wechat')}<div class="scroll profile-view"><div class="profile-card"><div class="profile-avatar">${noData?`<span class=\"avatar lg\" style=\"background:#050505\"></span>`:personAvatar(person.key,'lg')}</div><div><h2>${clean(noData?'物业通知':person.display)}</h2><p>${noData?'资料获取失败':person.bio?clean(person.bio):'微信用户'}</p>${person.key==='王雨桐'?'<p>锦苑花庭三栋 · 301室</p>':''}</div></div><div class="profile-section"><button class="profile-row ${person.friend&&!noData?'':'locked'}" onclick="openPersonMoments()"><strong>朋友圈</strong><span class="preview">${noData?'暂时无法查看':person.friend?clean(person.moment||'暂无新动态'):'仅好友可见'}</span><span class="chevron">›</span></button><div class="profile-row"><strong>更多信息</strong><span class="preview">${noData?'资料暂不可用':person.friend?'已添加至通讯录':'尚未添加为好友'}</span></div></div>${noData?'<p class="profile-note">未能获取此账号的个人信息。</p>':person.key==='我'?'<p class="profile-note">这是你的微信资料。</p>':person.friend?`<button class="profile-action" onclick="openDirect('${encodeURIComponent(state.person)}')">发消息</button>`:`<button class="profile-action secondary" onclick="sendFriendRequest()">添加到通讯录</button>`}</div>`;
+   view.innerHTML=`${header('个人信息','wechat')}<div class="scroll profile-view"><div class="profile-card"><div class="profile-avatar">${noData?`<span class=\"avatar lg\" style=\"background:#050505\"></span>`:personAvatar(person.key,'lg')}</div><div><h2>${clean(noData?'物业通知':person.display)}</h2><p>${noData?'资料获取失败':person.key==='我'?'我的微信':person.friend?'微信好友':'微信用户'}</p>${person.key==='王雨桐'?'<p>锦苑花庭三栋 · 301室</p>':''}</div></div><div class="profile-section">${!noData&&person.key!=='我'?`<div class="profile-row profile-signature"><strong>个性签名</strong><span class="preview">${clean(person.bio||'暂无')}</span></div>`:''}<button class="profile-row ${person.friend&&!noData?'':'locked'}" onclick="openPersonMoments()"><strong>朋友圈</strong><span class="preview">${noData?'暂时无法查看':person.friend?clean(person.moment||'暂无新动态'):'仅好友可见'}</span><span class="chevron">›</span></button><div class="profile-row"><strong>更多信息</strong><span class="preview">${noData?'资料暂不可用':person.friend?'已添加至通讯录':'尚未添加为好友'}</span></div></div>${noData?'<p class="profile-note">未能获取此账号的个人信息。</p>':person.key==='我'?'<p class="profile-note">这是你的微信资料。</p>':person.friend?`<button class="profile-action" onclick="openDirect('${encodeURIComponent(state.person)}')">发消息</button>`:`<button class="profile-action secondary" onclick="sendFriendRequest()">添加到通讯录</button>`}</div>`;
    return;
  }
  if(state.page==='contact-moments'){
@@ -854,7 +897,7 @@ function render(){document.body.dataset.theme=state.theme;
  }
  if(state.page==='notes'){view.innerHTML=`${header('备忘录','home')}<div class="scroll"><button class="note-row" onclick="go('note-detail')"><strong>${E('备忘录标题')}</strong><p>${E('备忘录摘要')}</p></button><button class="note-row" onclick="go('clues')"><strong>奇怪的事情</strong><p>线索 ${state.clues} 条</p></button></div>`;return}
  if(state.page==='clues'){view.innerHTML=`${header('奇怪的事情','notes')}<div class="scroll"><div class="doc-section"><div class="doc-content">${state.checked?E('备忘录线索'):'暂时没有记录。'}</div></div></div>`;return}
- if(state.page==='settings'){view.innerHTML=`${header('设置','home')}<div class="scroll settings-scroll"><div class="settings-section"><h3>外观</h3><p class="settings-subtitle">切换手机界面的显示模式</p><div class="theme-toggle" role="group" aria-label="显示模式"><button class="theme-option ${state.theme==='light'?'selected':''}" aria-pressed="${state.theme==='light'}" onclick="setTheme('light')"><span class="theme-symbol">☀</span>浅色模式</button><button class="theme-option ${state.theme==='dark'?'selected':''}" aria-pressed="${state.theme==='dark'}" onclick="setTheme('dark')"><span class="theme-symbol">☾</span>深色模式</button></div></div><div class="settings-section"><h3>消息播放速度</h3><p class="settings-subtitle">${E('消息速度说明')}</p><div class="theme-toggle">${[[1000,'快速'],[2200,'正常'],[3600,'缓慢']].map(x=>`<button class="theme-option ${state.messageSpeed===x[0]?'selected':''}" onclick="setSpeed(${x[0]})">${x[1]}</button>`).join('')}</div></div><div class="settings-section"><h3>当前存档 · Day ${state.day}</h3><div class="info-row"><span>精神压力</span><span>${state.stress}/100</span></div><div class="info-row"><span>物业可信度</span><span>${state.trust}/100</span></div><div class="info-row"><span>已发现线索</span><span>${state.clues}</span></div></div><div class="settings-foot"><button class="restart-btn" onclick="reset()">重新开始 Day 1</button><p class="fineprint">显示模式会自动保存。数值与后续章节会在正式剧本中继续扩展。</p></div></div>`;return}
+ if(state.page==='settings'){view.innerHTML=`${header('设置','home')}<div class="scroll settings-scroll"><div class="settings-section"><h3>外观</h3><p class="settings-subtitle">切换手机界面的显示模式</p><div class="theme-toggle" role="group" aria-label="显示模式"><button class="theme-option ${state.theme==='light'?'selected':''}" aria-pressed="${state.theme==='light'}" onclick="setTheme('light')"><span class="theme-symbol">☀</span>浅色模式</button><button class="theme-option ${state.theme==='dark'?'selected':''}" aria-pressed="${state.theme==='dark'}" onclick="setTheme('dark')"><span class="theme-symbol">☾</span>深色模式</button></div></div><div class="settings-section"><h3>消息播放速度</h3><p class="settings-subtitle">${E('消息速度说明')}</p><div class="theme-toggle">${[[1000,'快速'],[2200,'正常'],[3600,'缓慢']].map(x=>`<button class="theme-option ${state.messageSpeed===x[0]?'selected':''}" onclick="setSpeed(${x[0]})">${x[1]}</button>`).join('')}</div></div><div class="settings-section"><h3>当前存档 · Day ${state.day}</h3><div class="info-row"><span>精神压力</span><span>${state.stress}/100</span></div><div class="info-row"><span>物业可信度</span><span>${state.trust}/100</span></div><div class="info-row"><span>已发现线索</span><span>${state.clues}</span></div></div><div class="settings-foot"><button class="restart-btn" onclick="reset()">开始新游戏</button><p class="fineprint">显示模式会自动保存。数值与后续章节会在正式剧本中继续扩展。</p></div></div>`;return}
  const data={personal:['聊天',T('微信个人聊天'),'wechat'],moments:['朋友圈',T('朋友圈'),'wechat'],sms:['短信',T('短信'),'home'],phone:['电话',T('电话记录'),'home'],gallery:['相册',T('相册说明'),'home'], 'note-detail':[T('备忘录标题'),T('备忘录内容'),'notes'],repairs:['报事报修',T('报事报修'),'property']};
  const d=data[state.page]||['页面','内容将在正式版本中完善。','home'];view.innerHTML=`${header(d[0],d[2])}<div class="scroll"><div class="doc-section"><div class="doc-content">${clean(d[1])}</div></div></div>`;
  scheduleGroupNarrative(); scheduleNeighborNarrative();
@@ -903,12 +946,34 @@ function confirmProfile(){
 // The previous screen is recorded instead of hardcoding a return destination.
 // This is important when the same announcement opens from chat, group info or the property app.
 // Day 1 does not begin delivering messages until the player taps "查看手机".
+function clearSave(){try{localStorage.removeItem(SAVE_KEY)}catch(e){}}
+function startNewGame(){
+ if(hasContinueSave()){
+   document.querySelector('#overlay-root').innerHTML=`<div class="save-prompt"><div role="dialog" aria-modal="true"><h3>开始新游戏？</h3><p>将覆盖当前浏览器的游戏进度。确定后需要重新填写 ID 和选择头像。</p><button onclick="confirmNewGame()">确定开始</button><button onclick="closeSavePrompt()">取消</button></div></div>`;
+ }else confirmNewGame();
+}
+function closeSavePrompt(){document.querySelector('#overlay-root').innerHTML=''}
+function confirmNewGame(){
+ cancelNarrative();clearTimeout(bannerTimer);document.getElementById('incoming-banner')?.remove();closeSavePrompt();
+ const theme=state.theme,speed=state.messageSpeed;
+ clearSave();Object.assign(state,defaultState,{theme,messageSpeed:speed,navStack:[],page:'warning',profileDraft:'',playerId:'',avatar:0,phoneActivated:false,phoneStartAt:0});
+ store();render();
+}
+function continueGame(){
+ const snapshot=readSave();if(!snapshot){notify('没有可以继续的存档');render();return}
+ cancelNarrative();clearTimeout(bannerTimer);document.getElementById('incoming-banner')?.remove();closeSavePrompt();
+ const dest=['intro','warning','profile','day-end'].includes(snapshot.page)?'home':snapshot.page;
+ Object.assign(state,defaultState,snapshot,{page:dest,navStack:Array.isArray(snapshot.navStack)?snapshot.navStack.slice(-30):[],theme:state.theme,profileDraft:'',phoneActivated:!!snapshot.phoneActivated});
+ if(!state.phoneActivated && !['chapter','scene'].includes(dest)){state.page='scene'}
+ if(state.stage===0&&state.phoneActivated)state.phoneStartAt=Date.now();
+ store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction();
+}
 function beginPhoneExperience(){
  cancelNarrative();
  clearTimeout(bannerTimer);
  const oldBanner=document.getElementById('incoming-banner');
  if(oldBanner)oldBanner.remove();
- Object.assign(state,{phoneActivated:true,phoneStartAt:Date.now(),stage:0,checked:false,reply:false,replyChoice:0,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,clues:0,stress:8,trust:70});
+ Object.assign(state,{phoneActivated:true,phoneStartAt:Date.now(),stage:0,checked:false,reply:false,replyChoice:0,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,clues:0,stress:8,trust:70});
  store();
  go('home');
 }
@@ -921,14 +986,14 @@ function go(p){
   if(state.navStack.length>40)state.navStack.shift();
  }
  state.page=p;store();render();
- if(p==='chat')markGroupRead(); if(p==='neighbor')markNeighborRead(); scheduleGroupNarrative(); scheduleNeighborNarrative();
+ if(p==='chat')markGroupRead(); if(p==='neighbor')markNeighborRead(); scheduleGroupNarrative(); scheduleNeighborNarrative(); scheduleGroupReaction();
 }
 function goBack(){
  cancelNarrative();
  const previous=(Array.isArray(state.navStack)?state.navStack:[]).pop();
- state.page=previous||'home'; if(state.page==='chat')markGroupRead(); if(state.page==='neighbor')markNeighborRead(); store();render(); scheduleGroupNarrative(); scheduleNeighborNarrative();
+ state.page=previous||'home'; if(state.page==='chat')markGroupRead(); if(state.page==='neighbor')markNeighborRead(); store();render(); scheduleGroupNarrative(); scheduleNeighborNarrative(); scheduleGroupReaction();
 }
-function goHome(){state.navStack=[];state.page='home';store();render();scheduleGroupNarrative();scheduleNeighborNarrative()}
+function goHome(){state.navStack=[];state.page='home';store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction()}
 function setTheme(next){
  if(next!=='light'&&next!=='dark')return;
  state.theme=next;try{localStorage.setItem('resident_theme_set_v8','yes')}catch(e){}store();render();
@@ -936,12 +1001,12 @@ function setTheme(next){
 function openApp(a){const pages={'微信':'wechat','相册':'gallery','电话':'phone','短信':'sms','备忘录':'notes','物业服务':'property','设置':'settings'};go(pages[a])}
 function groupCount(){return T('群成员名单').split('\n').filter(Boolean).length}
 function openAnnouncement(){state.seenAnnouncement=true;state.stage=Math.max(3,state.stage);cancelNarrative();store();go('rules');scheduleGroupNarrative()}
-function finishGroup(){state.reply=true;state.replyChoice=0;state.stage=7;state.yutongStage=1;store();render(); if(!isViewingTarget('neighbor'))banner(T('王雨桐新消息1'),'王雨桐','neighbor'); scheduleNeighborNarrative()}
+function finishGroup(){state.reply=true;state.replyChoice=0;state.stage=7;state.yutongStage=1;state.groupReactionPending=false;store();render();if(!isViewingTarget('neighbor'))banner(T('王雨桐新消息1'),'王雨桐','neighbor');scheduleNeighborNarrative()}
 function replyNeighbor(choice){state.yutongReply=choice;state.yutongStage=3;store();render();scheduleNeighborNarrative()}
-function setSpeed(v){state.messageSpeed=v;store();render();scheduleGroupNarrative();scheduleNeighborNarrative()}
-function reply(choice){state.reply=true;state.replyChoice=choice;state.stage=7;state.yutongStage=1;store();render(); if(!isViewingTarget('neighbor'))banner(T('王雨桐新消息1'),'王雨桐','neighbor'); scheduleNeighborNarrative()}
+function setSpeed(v){state.messageSpeed=v;store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction()}
+function reply(choice){state.reply=true;state.replyChoice=choice;state.stage=7;state.yutongStage=1;state.groupReactionReady=false;state.groupReactionPending=[1,2].includes(choice);store();render();if(!isViewingTarget('neighbor'))banner(T('王雨桐新消息1'),'王雨桐','neighbor');scheduleNeighborNarrative();scheduleGroupReaction()}
 function notify(s){const t=document.querySelector('#toast');t.textContent=s;t.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>t.classList.remove('show'),3000)}
-function reset(){cancelNarrative();clearTimeout(bannerTimer);document.getElementById('incoming-banner')?.remove();const theme=state.theme;Object.assign(state,defaultState,{navStack:[],theme,phoneActivated:false});store();render()}
+function reset(){startNewGame()}
 document.querySelector('#home-gesture').addEventListener('click',goHome);
 loadStory();
 
