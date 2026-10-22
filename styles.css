@@ -569,3 +569,43 @@ body[data-theme=dark] .save-prompt p{color:#aaa1ad}
 .moments-full .moment-profile-cover+ .moment-entry{border-top:0!important}
 body[data-theme=dark] .moments-full,body[data-theme=dark] .moments-full .moment-entry,body[data-theme=dark] .moments-full .moment-cover,body[data-theme=dark] .moments-full .moment-profile-cover{background:var(--card)!important;color:var(--ink)!important}
 body[data-theme=light] .moments-full,body[data-theme=light] .moments-full .moment-entry,body[data-theme=light] .moments-full .moment-cover,body[data-theme=light] .moments-full .moment-profile-cover{background:var(--card)!important;color:var(--ink)!important}
+/* 2026-10-23: consistent compact WeChat and synchronized app shell; own visual design */
+.statusbar{z-index:28!important;box-shadow:none!important;transition:background-color .12s ease}
+body[data-theme="dark"] .statusbar{background:#24252b!important;color:#eeeaf0!important}
+body[data-theme="light"] .statusbar{background:#f6f6f6!important;color:#303239!important}
+body[data-page="home"] .statusbar,body[data-page="intro"] .statusbar,body[data-page="warning"] .statusbar,body[data-page="chapter"] .statusbar,body[data-page="scene"] .statusbar,body[data-page="day-end"] .statusbar,body[data-page="day1-night"] .statusbar{background:transparent!important}
+.page-head,.app-header{border-bottom:1px solid var(--border)!important}
+.chat-item{min-height:65px!important;padding:9px 15px!important;gap:11px!important;align-items:center!important}
+.chat-avatar-wrap{width:43px!important;height:43px!important;flex:0 0 43px!important}
+.chat-avatar-wrap .avatar{width:43px!important;height:43px!important;border-radius:8px!important;display:inline-flex!important;align-items:center!important;justify-content:center!important;font-size:15px!important}
+.chat-avatar-wrap .group-av{background:#91ad9d!important}
+.chat-avatar-wrap .service-avatar{background:#90a1c1!important;color:#fff!important;font-size:24px!important;font-weight:400!important}
+.chat-title{font-size:14px!important;font-weight:500!important;letter-spacing:0!important;line-height:1.4!important}
+.chat-time{font-size:10px!important;flex:none!important;font-weight:400!important;opacity:.86}
+.chat-snippet{font-size:12px!important;line-height:1.4!important;color:var(--text2)!important;min-width:0!important;flex:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important}
+.chat-meta{min-width:0!important;flex:1!important}
+.chat-meta-top{gap:8px!important}
+.chat-meta-bottom{margin-top:4px!important;min-width:0!important;display:flex!important;gap:7px!important;align-items:center!important}
+.chat-unread.badge-on-row{flex:none!important}
+.page-head h2,.app-header h2{font-size:15px!important;font-weight:500!important;letter-spacing:0!important}
+.profile-card h2,.me-card h2{font-weight:550!important}
+.moments-full .moment-entry .moment-author{font-weight:550!important}
+.msg-name{font-weight:400!important;font-size:10px!important;color:var(--text2)!important}
+.msg-bubble{font-size:13px!important;line-height:1.52!important}
+.chat-messages{gap:12px!important;padding:12px 13px 25px!important}
+.chat-pinned{font-size:11px!important}
+.wechat-service-list,.wechat-service-detail{background:var(--wash)!important;color:var(--ink)!important}
+.service-time{text-align:center;color:var(--text2);font-size:10px;margin:18px auto 10px}
+.service-notification-row{width:calc(100% - 24px);margin:0 12px;background:var(--card);color:var(--ink);display:flex;align-items:center;text-align:left;gap:13px;padding:14px 12px;border-radius:9px}
+.service-notification-row .service-avatar{width:39px;height:39px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:#90a1c1;color:#fff;flex:none}
+.service-copy{display:flex;flex-direction:column;gap:6px;min-width:0;flex:1}
+.service-copy strong{font-size:14px;font-weight:520}
+.service-copy small{font-size:11px;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.service-chevron{color:var(--text2)}
+.service-notice-card{background:var(--card);color:var(--ink);margin:0 13px;padding:18px 16px;border-radius:9px}
+.service-notice-card header{font-size:14px;font-weight:550;border-bottom:1px solid var(--border);padding-bottom:13px;display:flex;justify-content:space-between}
+.service-notice-card header small{font-size:10px;color:var(--text2);font-weight:400}
+.service-notice-card p{font-size:13px;line-height:1.8;white-space:pre-wrap;margin:17px 0 3px}
+.home-resident-card{display:none!important}
+
+.chat-avatar-wrap .service-avatar svg,.service-notification-row .service-avatar svg{height:22px;width:22px;display:block;stroke:currentColor!important;fill:none!important}

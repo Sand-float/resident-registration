@@ -1,0 +1,13 @@
+《住户登记》Day 1 微信与流程优化版
+
+GitHub Pages 更新方法：
+1. 解压本 ZIP 文件。
+2. 进入 sand-float/resident-registration 仓库，选择 Add file → Upload files。
+3. 上传解压后的 index.html、story.txt、styles.css、day1.css、game.js、day1.js、部署说明.txt，以及整个 assets 文件夹。
+4. 确认以上文件直接位于仓库根目录（assets 是根目录下的文件夹），提交修改。
+5. 如仍显示旧画面，请强制刷新浏览器。
+
+不要上传整个 ZIP 作为网页文件，不要只覆盖 index.html。
+存档保存在浏览器本地，版本更新一般不清除已有存档。
+
+本作品原创剧本与 UI 代码，不包含《异常封校》的代码或素材。

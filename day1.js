@@ -16,7 +16,7 @@ function dayOneSync(){
  }
  if(!state.dayOneTasks || typeof state.dayOneTasks!=='object')state.dayOneTasks={};
 }
-function unlockDayOne(){if(!state.dayOneUnlocked){state.dayOneUnlocked=true;state.dayOneTasks={};store();}}
+function unlockDayOne(){if(!state.dayOneUnlocked){state.dayOneUnlocked=true;state.dayOneTasks=state.dayOneTasks||{};store();}if(state.page==='home')render();}
 function dayOneOnNavigate(p){if(p==='body-status' && !state.dayOneBodySeen){state.dayOneBodySeen=true;store();}}
 const dayOneAllDone=()=>DAY1_TASKS.every(t=>!!state.dayOneTasks?.[t.id]);
 const dayOneCompleted=()=>DAY1_TASKS.filter(t=>!!state.dayOneTasks?.[t.id]).length;
@@ -63,7 +63,7 @@ function renderDayOnePage(){
  }
  if(page==='day1-choose'){
   if(!state.dayOneBodySeen){goHome();return true}
-  view.innerHTML=`${d1Header('今晚的消息')}<div class="scroll d1-choice-page"><span class="d1-eyebrow">20:43 · 一点疑惑</span><h2>${E('Day1选择标题')}</h2><p>${E('Day1选择说明')}</p><div class="d1-choice-list"><button onclick="chooseDayOneInquiry('neighbor')"><strong>问问王雨桐</strong><small>和隔壁邻居再聊聊</small><span>›</span></button><button onclick="chooseDayOneInquiry('group')"><strong>问问物业群</strong><small>看看小林有没有新消息</small><span>›</span></button><button onclick="chooseDayOneInquiry('none')"><strong>什么都不问</strong><small>还是先和米米说说吧</small><span>›</span></button></div></div></div>`;
+  view.innerHTML=`${d1Header('今晚的消息')}<div class="scroll d1-choice-page"><span class="d1-eyebrow">20:43 · 一点疑惑</span><h2>${E('Day1选择标题')}</h2><p>${E('Day1选择说明')}</p><div class="d1-choice-list"><button onclick="chooseDayOneInquiry('neighbor')"><strong>问问王雨桐</strong><small>和隔壁邻居再聊聊</small><span>›</span></button><button onclick="chooseDayOneInquiry('group')"><strong>问问物业群</strong><small>看看小林有没有新消息</small><span>›</span></button><button onclick="chooseDayOneInquiry('none')"><strong>什么都不问</strong><small>暂时不问，先把手头的事做完</small><span>›</span></button></div></div></div>`;
   return true;
  }
  if(page==='mimi-story'){
@@ -71,7 +71,7 @@ function renderDayOnePage(){
   const step=Number(state.dayOneMimiStep)||0;
   const bubbles=[`<div class="day-divide">今天 20:48</div>`,msg('米米',T('Day1闺蜜开场1'),'friend'),msg('米米',T('Day1闺蜜开场2'),'friend')];
   if(step>=1)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),'renter',true),msg('米米',T('Day1闺蜜回应'+(state.dayOneMimiChoice||1)),'friend'));
-  if(step>=2)bubbles.push(msg('米米',T('Day1闺蜜收尾'),'friend'));
+  if(step>=2)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家晚安')||'好呀，晚安～','renter',true),msg('米米',T('Day1闺蜜收尾'),'friend'));
   view.innerHTML=`<div class="screen chat-screen d1-mimi-chat"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>米米</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('米米')}')">⋯</button></div><div class="scroll" id="mimi-day1-scroll"><div class="chat-messages">${bubbles.join('')}</div></div>${step===0?`<div class="reply-area"><div class="reply-hint">回复米米</div><button class="reply-option" onclick="replyDayOneMimi(1)">${E('Day1闺蜜玩家回复1')}</button><button class="reply-option" onclick="replyDayOneMimi(2)">${E('Day1闺蜜玩家回复2')}</button></div>`:step===1?`<div class="reply-area"><button class="reply-option" onclick="finishDayOneMimi()">和她说晚安 →</button></div>`:`<div class="reply-area"><button class="reply-option" onclick="go('day1-night')">放下手机，准备入睡 →</button></div>`}</div>`;
   document.getElementById('mimi-day1-scroll').scrollTop=99999;
   return true;
@@ -119,14 +119,8 @@ function dayOneNeighborExtra(){
  if(state.dayOneAsked&&state.dayOneChoice==='neighbor')return `<div class="day-divide">今天 20:44</div>${msg(state.playerId||'我',T('Day1问邻居正文'),'renter',true)}${msg('王雨桐',T('Day1邻居回应'),'friend')}`;
  return '';
 }
-function dayOneChatFooter(){
- if(state.dayOneAsked&&state.dayOneChoice==='group')return `<div class="reply-area"><button class="reply-option" onclick="go('mimi-story')">和米米聊聊今天 →</button></div>`;
- return '';
-}
-function dayOneNeighborFooter(){
- if(state.dayOneAsked&&state.dayOneChoice==='neighbor')return `<div class="reply-area"><button class="reply-option" onclick="go('mimi-story')">和米米聊聊今天 →</button></div>`;
- return '';
-}
+function dayOneChatFooter(){return ''}
+function dayOneNeighborFooter(){return ''}
 function replyDayOneMimi(choice){
  if(!state.dayOneAsked||!dayOneAllDone()){notify('先完成今晚的事');goHome();return}
  if(state.dayOneMimiStep!==0)return;

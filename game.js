@@ -42,7 +42,7 @@ function advanceGroupMessage(){
  if(state.page==='chat')state.groupReadStage=groupMessageCount();
  store();
  if(!isViewingTarget('chat'))banner(state.stage===1?T('公告标题'):T('群聊'+state.stage+'正文'), state.stage===1?E('业主群名称'):T('群聊'+state.stage+'发言人'),'chat');
- render();
+ if(state.page!=='rules'&&state.page!=='members')render();
  scheduleGroupNarrative();
 }
 function scheduleGroupNarrative(){
@@ -63,7 +63,7 @@ function scheduleGroupReaction(){
    if(state.page==='chat')state.groupReadStage=groupMessageCount();
    store();
    if(!isViewingTarget('chat'))banner(T('群聊回复反馈'+state.replyChoice+'正文'),T('群聊回复反馈'+state.replyChoice+'发言人'),'chat');
-   render();
+   if(state.page!=='rules'&&state.page!=='members')render();
  },Math.max(900,Number(state.messageSpeed)||2200));
 }
 function advanceNeighborMessage(){
@@ -76,7 +76,7 @@ function advanceNeighborMessage(){
  let key=state.yutongStage===2?'王雨桐新消息2':state.yutongStage===4?'王雨桐后续消息1':'王雨桐后续消息2';
  store();
  if(!isViewingTarget('neighbor'))banner(T(key),'王雨桐','neighbor');
- render();
+ if(state.page!=='rules'&&state.page!=='members')render();
  scheduleNeighborNarrative();
 }
 function scheduleNeighborNarrative(){
@@ -208,19 +208,92 @@ function openPersonMoments(){
  go('contact-moments');
 }
 function sendFriendRequest(){notify('好友申请已发送，等待对方通过');}
-function chatTranscript(key){
+// 唯一消息源：聊天气泡与会话列表预览均由这里生成。
+function directEntries(key){
  const section=key==='妈妈'?'微信妈妈聊天':key==='米米'?'微信闺蜜聊天':key==='刘芳'?'微信房东聊天':key==='小林'?'微信物业聊天':'';
  return T(section).split('\n').filter(Boolean).map(line=>{
-   const idx=line.indexOf('：');const speaker=idx>=0?line.slice(0,idx):key;const body=idx>=0?line.slice(idx+1):line;
-   return msg(speaker,body,'friend',speaker==='你');
- }).join('');
+  const idx=line.indexOf('：'),speaker=(idx>=0?line.slice(0,idx):key).trim();
+  const body=(idx>=0?line.slice(idx+1):line).trim();
+  return {speaker:speaker==='你'?'我':speaker,body,mine:speaker==='你'};
+ }).filter(m=>m.body);
+}
+function chatTranscript(key){return directEntries(key).map(m=>msg(m.speaker,m.body,'friend',m.mine)).join('')}
+function groupEntries(){
+ const a=[];
+ if(state.stage>=1)a.push({speaker:T('群聊1发言人'),body:T('公告正文')});
+ for(let i=2;i<=Math.min(7,state.stage);i++)a.push({speaker:T('群聊'+i+'发言人'),body:T('群聊'+i+'正文')});
+ if(state.replyChoice&&state.replyChoice!==3)a.push({speaker:'我',body:T('玩家回复'+state.replyChoice),mine:true});
+ if(state.groupReactionReady&&[1,2].includes(state.replyChoice))a.push({speaker:T('群聊回复反馈'+state.replyChoice+'发言人'),body:T('群聊回复反馈'+state.replyChoice+'正文')});
+ if(state.dayOneAsked&&state.dayOneChoice==='group'){
+  a.push({speaker:'我',body:T('Day1问物业正文'),mine:true});
+  a.push({speaker:'物业管家-小林',body:T('Day1物业回应')});
+ }
+ return a.filter(m=>m.body);
+}
+function neighborEntries(){
+ const a=[
+  {speaker:'王雨桐',body:T('王雨桐旧消息1')},
+  {speaker:'我',body:T('王雨桐旧回复1')||'差不多搬完啦，谢谢你～',mine:true},
+  {speaker:'王雨桐',body:T('王雨桐旧消息2')},
+  {speaker:'我',body:T('王雨桐旧回复2')||'好呀，我住302，之后可能要麻烦你了。',mine:true}
+ ];
+ if(state.yutongStage>=1)a.push({speaker:'王雨桐',body:T('王雨桐新消息1')});
+ if(state.yutongStage>=2)a.push({speaker:'王雨桐',body:T('王雨桐新消息2')});
+ if(state.yutongStage>=3)a.push({speaker:'我',body:T('王雨桐回复'+(state.yutongReply||1)),mine:true});
+ if(state.yutongStage>=4)a.push({speaker:'王雨桐',body:T('王雨桐回应'+(state.yutongReply||1)+'第一条')||T('王雨桐后续消息1')});
+ if(state.yutongStage>=5)a.push({speaker:'王雨桐',body:T('王雨桐回应'+(state.yutongReply||1)+'第二条')||T('王雨桐后续消息2')});
+ if(state.dayOneAsked&&state.dayOneChoice==='neighbor'){
+  a.push({speaker:'我',body:T('Day1问邻居正文'),mine:true});
+  a.push({speaker:'王雨桐',body:T('Day1邻居回应')});
+ }
+ return a.filter(m=>m.body);
+}
+function mimiEntries(){
+ if(!state.dayOneAsked||!dayOneAllDone())return directEntries('米米');
+ const a=[{speaker:'米米',body:T('Day1闺蜜开场1')},{speaker:'米米',body:T('Day1闺蜜开场2')}];
+ if(state.dayOneMimiStep>=1){a.push({speaker:'我',body:T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),mine:true});a.push({speaker:'米米',body:T('Day1闺蜜回应'+(state.dayOneMimiChoice||1))})}
+ if(state.dayOneMimiStep>=2){a.push({speaker:'我',body:T('Day1闺蜜玩家晚安')||'好呀，晚安～',mine:true});a.push({speaker:'米米',body:T('Day1闺蜜收尾')})}
+ return a.filter(m=>m.body);
+}
+function formatPreview(entries,withName=false){
+ const last=entries[entries.length-1];if(!last)return '';
+ return (withName?(last.mine?'我':last.speaker)+'：':'')+last.body.replace(/\s+/g,' ').trim();
+}
+function parcelMessage(){return T('短信').replace(/【快递服务】/g,'').trim()}
+// WeChat 的会话名、头像文字、聊天记录和摘要都在渲染时读取共同的数据。
+function wechatRows(){
+ return [
+  {label:T('业主群名称')+' ('+groupCount()+')',key:'group',snippet:formatPreview(groupEntries(),true),unread:unreadGroupCount(),time:state.dayOneAsked&&state.dayOneChoice==='group'?'20:44':state.groupReactionReady?'20:18':'20:16'},
+  {label:'妈妈',key:'妈妈',snippet:formatPreview(directEntries('妈妈')),unread:0,time:'昨天'},
+  {label:'全世界最好的闺闺米米♥',key:'米米',snippet:formatPreview(mimiEntries()),unread:0,time:state.dayOneMimiStep?'20:48':'昨天'},
+  {label:'王雨桐',key:'王雨桐',snippet:formatPreview(neighborEntries()),unread:unreadNeighborCount(),time:state.dayOneAsked&&state.dayOneChoice==='neighbor'?'20:44':state.yutongStage?'20:20':'昨天'},
+  {label:'房东刘芳',key:'刘芳',snippet:formatPreview(directEntries('刘芳')),unread:0,time:'昨天'},
+  {label:'物业管家-小林',key:'小林',snippet:formatPreview(directEntries('小林')),unread:0,time:'昨天'},
+  {label:'服务通知',key:'service',snippet:'快递服务：'+parcelMessage(),unread:0,time:'20:16'}
+ ];
+}
+function serviceGlyph(){return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m4 8 8 6 8-6"/></svg>'}
+function wechatRowAvatar(key){
+ if(key==='group')return '<span class="avatar group-av"></span>';
+ if(key==='service')return '<span class="avatar service-avatar" aria-label="服务通知">'+serviceGlyph()+'</span>';
+ return personAvatar(key,'sm');
+}
+function openWechatRow(key){
+ if(key==='group')go('chat');
+ else if(key==='service')go('service-notices');
+ else openDirect(encodeURIComponent(key));
 }
 function visibleMoments(){
  return T('朋友圈').split('\n').filter(Boolean).map(line=>{
     const idx=line.indexOf('：');return {name:idx>=0?line.slice(0,idx).trim():'',text:idx>=0?line.slice(idx+1).trim():line};
  }).filter(x=>getPerson(x.name).friend && x.name);
 }
-function render(){if(typeof dayOneSync==='function')dayOneSync();document.body.dataset.theme=state.theme;
+function render(){
+ const priorRulesScroll=state.page==='rules'?document.querySelector('.rules-scroll')?.scrollTop:null;
+ if(typeof dayOneSync==='function')dayOneSync();
+ document.body.dataset.theme=state.theme;document.body.dataset.page=state.page;
+ document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.theme==='dark'?'#24252b':'#f6f6f6');
+ if(priorRulesScroll!==null&&priorRulesScroll!==undefined)queueMicrotask(()=>{const pane=document.querySelector('.rules-scroll');if(pane)pane.scrollTop=priorRulesScroll});
  document.querySelector('#home-gesture').classList.toggle('light', ['intro','warning','chapter','scene'].includes(state.page)||state.page==='home'&&state.theme==='dark');
  document.querySelector('#home-gesture').style.display=['intro','warning','profile','chapter','scene'].includes(state.page)?'none':'flex';
  document.querySelector('#statusbar').style.color=['intro','warning','chapter','scene'].includes(state.page)||state.theme==='dark'?'#f5edf1':'#2a2b30';
@@ -230,30 +303,29 @@ function render(){if(typeof dayOneSync==='function')dayOneSync();document.body.d
  if(state.page==='profile'){view.innerHTML=`<div class="profile-screen"><div class="profile-content"><span class="profile-kicker">WELCOME, NEW RESIDENT</span><h1>建立住户档案</h1><p class="profile-desc">请先为自己选择头像和 ID。<br>这份资料会出现在你的模拟手机中。</p><p class="profile-label">选择头像</p><div class="avatar-choices">${[1,2,3].map(i=>`<button type="button" class="avatar-choice ${state.avatar===i?'selected':''}" aria-pressed="${state.avatar===i}" onclick="chooseAvatar(${i})">${avatarMark(i)}<b>头像 ${i}</b><small>待细化</small></button>`).join('')}</div><label for="profile-id" class="profile-label">设置 ID</label><div class="profile-field"><input id="profile-id" type="text" autocomplete="off" inputmode="text" spellcheck="false" placeholder="输入 1–4 个汉字" value="${clean(state.profileDraft)}" oninput="updateProfile()" oncompositionend="updateProfile()" aria-describedby="profile-tip" maxlength="8"><span id="profile-count" class="count">${Array.from(state.profileDraft).length}/4</span></div><div id="profile-tip" class="profile-tip">支持简体、繁体，最多 4 个汉字。</div><button id="profile-continue" class="profile-continue" onclick="confirmProfile()" disabled>确认并开始入住 →</button><div class="profile-footnote">头像为临时占位设计，后续可以替换。</div></div></div>`;validateProfile();return}
  if(state.page==='chapter'){view.innerHTML=`<div class="cover-game chapter"><div class="cover-supra">CHAPTER ${String(state.day).padStart(2,'0')}</div><h1>Day ${state.day}</h1><div class="chapter-rule"></div><div class="day-date">${E('Day1日期')}</div><button class="chapter-continue" onclick="go('scene')">点击继续 <span>↗</span></button></div>`;return}
  if(state.page==='scene'){view.innerHTML=`<div class="cover-game scene"><div class="scene-top"><small>${E('Day1开场时间')}</small><h2>${E('Day1开场标题')}</h2><p>${L('Day1开场正文')}</p></div><button class="phone-view-cta" onclick="beginPhoneExperience()">查看手机 <span>→</span></button></div>`;return}
- if(state.page==='home'){view.innerHTML=`<div class="screen home-screen"><div class="home-orb"></div><div class="home-content"><div class="home-kicker"><span class="home-kicker-dot"></span>${E('小区名称')} · 302</div><div class="home-clock">20:16</div><div class="home-date">${E('Day1日期').split(' · ')[0]} · Day ${state.day}</div><div class="home-apps-label"><span>应用</span><span class="home-apps-stroke"></span></div><div class="apps-grid">${['微信','相册','电话','短信','备忘录','物业服务','设置',...(state.dayOneUnlocked?['身体状态']:[])].map(a=>`<button class="app-launch" onclick="openApp('${a}')"><div class="app-icon ${a==='微信'?'wechat':a==='相册'?'gallery':a==='电话'?'phoneicon':a==='短信'?'smsicon':a==='备忘录'?'notesicon':a==='物业服务'?'property':'settings'}"><img class="app-image" src="${APP_DESKTOP_ICONS[a]}" alt="" aria-hidden="true">${a==='微信'&&totalWechatUnread()>0?`<span class=\"app-dot\">${totalWechatUnread()>99?'99+':totalWechatUnread()}</span>`:''}</div><span class="app-label">${a}</span></button>`).join('')}</div><button class="home-resident-card" onclick="go('residence')"><div><small>RESIDENT CARD</small><strong>${E('主角房号')}</strong><span>住户档案 · 已认证</span></div><span class="resident-icon" aria-hidden="true">⌂</span></button>${state.dayOneUnlocked?dayOneHomeGuide():''}</div></div>`;return}
+ if(state.page==='home'){view.innerHTML=`<div class="screen home-screen"><div class="home-orb"></div><div class="home-content"><div class="home-kicker"><span class="home-kicker-dot"></span>${E('小区名称')} · 302</div><div class="home-clock">20:16</div><div class="home-date">${E('Day1日期').split(' · ')[0]} · Day ${state.day}</div><div class="home-apps-label"><span>应用</span><span class="home-apps-stroke"></span></div><div class="apps-grid">${['微信','相册','电话','短信','备忘录','物业服务','设置',...(state.dayOneUnlocked?['身体状态']:[])].map(a=>`<button class="app-launch" onclick="openApp('${a}')"><div class="app-icon ${a==='微信'?'wechat':a==='相册'?'gallery':a==='电话'?'phoneicon':a==='短信'?'smsicon':a==='备忘录'?'notesicon':a==='物业服务'?'property':'settings'}"><img class="app-image" src="${APP_DESKTOP_ICONS[a]}" alt="" aria-hidden="true">${a==='微信'&&totalWechatUnread()>0?`<span class=\"app-dot\">${totalWechatUnread()>99?'99+':totalWechatUnread()}</span>`:''}</div><span class="app-label">${a}</span></button>`).join('')}</div>${state.dayOneUnlocked?dayOneHomeGuide():''}</div></div>`;return}
  if(state.page==='wechat'){
-   const chats=[
-      [T('业主群名称')+' ('+groupCount()+')',T('群聊1发言人')+'：'+T('公告标题'),'group','chat'],
-      ['妈妈',T('微信妈妈摘要'),'妈妈','direct-chat'],
-      ['全世界最好的闺闺米米♥',T('微信闺蜜摘要'),'米米','direct-chat'],
-      ['王雨桐',state.yutongStage?T('王雨桐新消息2'):T('微信邻居摘要'),'王雨桐','neighbor'],
-      ['房东刘芳',T('微信房东摘要'),'刘芳','direct-chat'],
-      ['物业管家-小林',T('微信物业聊天'),'小林','direct-chat'],
-      ['快递通知',T('微信快递摘要'),'system','sms']
-   ];
-   view.innerHTML=`<div class="screen"><div class="page-head wechat-head"><button class="icon-btn" onclick="goHome()" aria-label="返回桌面">‹</button><h2>微信</h2><button class="icon-btn" onclick="notify('此功能将在正式版本中开放')">⊕</button></div><div class="scroll"><div class="search-bar">⌕ 搜索</div>${state.tab==='微信'?`<div class="list-group">${chats.map(x=>`<button class="chat-item" onclick="${x[2]==='group'?"go('chat')":x[2]==='system'?"go('sms')":`openDirect('${encodeURIComponent(x[2])}')`}"><div class="chat-avatar-wrap"><div class="avatar ${x[2]==='group'?'group-av':''}" style="${x[2]!=='group'?'background:'+personHue(x[2]):''}">${x[2]==='group'?'':clean(x[0].slice(0,1))}</div></div><div class="chat-meta"><div class="chat-meta-top"><div class="chat-title">${clean(x[0])}</div><div class="chat-time">20:16</div></div><div class="chat-meta-bottom"><div class="chat-snippet">${clean(x[1]||'')}</div>${(x[2]==='group'&&unreadGroupCount()>0)?`<span class="chat-unread badge-on-row">${unreadGroupCount()>99?'99+':unreadGroupCount()}</span>`:''}${(x[2]==='王雨桐'&&unreadNeighborCount()>0)?`<span class="chat-unread badge-on-row">${unreadNeighborCount()>99?'99+':unreadNeighborCount()}</span>`:''}</div></div></button>`).join('')}</div>`:state.tab==='通讯录'?`<div class="list-group">${T('通讯录名单').split('\n').filter(Boolean).map(n=>`<button class="contact-row" onclick="openPerson('${encodeURIComponent(n)}')">${personAvatar(n)}<span>${clean(n)}</span><span style="margin-left:auto;color:#aaa">›</span></button>`).join('')}</div>`:state.tab==='发现'?`<button class="menu-row" onclick="go('moments')">◉　朋友圈　 ›</button><button class="menu-row" onclick="go('property')">⌂　${E('小区名称')}·物业服务　 ›</button>`:`<div class="me-card">${personAvatar('我','lg')}<div><h2>${clean(state.playerId||'新住户')}</h2><p>微信号：resident_302</p></div></div><button class="menu-row" onclick="go('notes')">我的收藏　 ›</button>`}</div><div class="bottom-tabs">${['微信','通讯录','发现','我'].map(t=>`<button class="tab ${state.tab===t?'active':''}" onclick="state.tab='${t}';render()"><span class="tab-icon">${navTabIcon(t)}</span><span>${t}</span></button>`).join('')}</div></div>`;
+   const chats=wechatRows();
+   view.innerHTML=`<div class="screen"><div class="page-head wechat-head"><button class="icon-btn" onclick="goHome()" aria-label="返回桌面">‹</button><h2>微信</h2><button class="icon-btn" onclick="notify('此功能将在正式版本中开放')">⊕</button></div><div class="scroll"><div class="search-bar">⌕ 搜索</div>${state.tab==='微信'?`<div class="list-group">${chats.map(x=>`<button class="chat-item" onclick="openWechatRow('${x.key}')"><div class="chat-avatar-wrap">${wechatRowAvatar(x.key)}</div><div class="chat-meta"><div class="chat-meta-top"><div class="chat-title">${clean(x.label)}</div><div class="chat-time">${clean(x.time)}</div></div><div class="chat-meta-bottom"><div class="chat-snippet">${clean(x.snippet)}</div>${x.unread>0?`<span class="chat-unread badge-on-row">${x.unread>99?'99+':x.unread}</span>`:''}</div></div></button>`).join('')}</div>`:state.tab==='通讯录'?`<div class="list-group">${T('通讯录名单').split('\n').filter(Boolean).map(n=>`<button class="contact-row" onclick="openPerson('${encodeURIComponent(n)}')">${personAvatar(n)}<span>${clean(n)}</span><span style="margin-left:auto;color:#aaa">›</span></button>`).join('')}</div>`:state.tab==='发现'?`<button class="menu-row" onclick="go('moments')">◉　朋友圈　 ›</button><button class="menu-row" onclick="go('property')">⌂　${E('小区名称')}·物业服务　 ›</button>`:`<div class="me-card">${personAvatar('我','lg')}<div><h2>${clean(state.playerId||'新住户')}</h2><p>微信号：resident_302</p></div></div><button class="menu-row" onclick="go('notes')">我的收藏　 ›</button>`}</div><div class="bottom-tabs">${['微信','通讯录','发现','我'].map(t=>`<button class="tab ${state.tab===t?'active':''}" onclick="state.tab='${t}';render()"><span class="tab-icon">${navTabIcon(t)}</span><span>${t}</span></button>`).join('')}</div></div>`;
    return;
+ }
+ if(state.page==='service-notices'){
+   view.innerHTML=`${header('服务通知','wechat')}<div class="scroll wechat-service-list"><div class="service-time">今天 20:16</div><button class="service-notification-row" onclick="go('service-detail')"><span class="service-avatar">${serviceGlyph()}</span><span class="service-copy"><strong>快递服务</strong><small>${clean(parcelMessage())}</small></span><span class="service-chevron">›</span></button></div></div>`;return;
+ }
+ if(state.page==='service-detail'){
+   view.innerHTML=`${header('快递服务','service-notices')}<div class="scroll wechat-service-detail"><div class="service-time">今天 20:16</div><article class="service-notice-card"><header>快递服务 <small>20:16</small></header><p>${clean(parcelMessage())}</p></article></div></div>`;return;
  }
  if(state.page==='chat'){markGroupRead();
    const n=state.stage;
-   const chatParts=n>=1?[storyMsg(1,'black')]:[];
+   const chatParts=[];
+   if(n>=1)chatParts.push(msg(T('群聊1发言人'),T('公告正文'),'black'));
    for(let i=2;i<=Math.min(7,n);i++){
      if(i===4)chatParts.push(`<div class="day-divide">${E('群公告系统消息')}</div>`);
-     chatParts.push(storyMsg(i,i===4||i===7?'house':'friend'));
+     chatParts.push(msg(T('群聊'+i+'发言人'),T('群聊'+i+'正文'),i===4||i===7?'house':'friend'));
    }
-   if(state.replyChoice&&state.replyChoice!==3)chatParts.push(msg(state.playerId||'我',T('玩家回复'+state.replyChoice),'renter',true));
-   if(state.groupReactionReady&&[1,2].includes(state.replyChoice))chatParts.push(msg(T('群聊回复反馈'+state.replyChoice+'发言人'),T('群聊回复反馈'+state.replyChoice+'正文'),'friend'));
-   if(state.dayOneAsked&&state.dayOneChoice==='group')chatParts.push(dayOneGroupExtra());
+   const allGroup=groupEntries();
+   const baseCount=Math.min(n,7);
+   for(const item of allGroup.slice(baseCount))chatParts.push(msg(item.speaker,item.body,'friend',!!item.mine));
    const action=!state.seenAnnouncement&&n>=3?`<div class="reply-area"><div class="reply-hint">${E('群公告操作提示')}</div><button class="reply-option" onclick="openAnnouncement()">查看群公告 →</button></div>`:
      !state.seenAnnouncement?`<div class="chat-compose"><span>⊕</span><input disabled placeholder="有新消息正在进入…"/><span>☺</span></div>`:
      n>=6&&!state.checked?`<div class="reply-area"><div class="reply-hint">${E('查看成员操作提示')}</div><button class="reply-option" onclick="go('members')">查看群成员 →</button></div>`:
@@ -264,13 +336,13 @@ function render(){if(typeof dayOneSync==='function')dayOneSync();document.body.d
    return;
  }
  if(state.page==='neighbor'){markNeighborRead();
-   let parts=[`<div class="day-divide">昨天</div>`,msg('王雨桐',T('王雨桐旧消息1'),'friend'),msg(state.playerId||'我',T('王雨桐旧回复1')||'差不多搬完啦，谢谢你～','renter',true),msg('王雨桐',T('王雨桐旧消息2'),'friend'),msg(state.playerId||'我',T('王雨桐旧回复2')||'好呀，我住302，之后可能要麻烦你了。','renter',true)];
-   if(state.yutongStage>=1)parts.push(`<div class="day-divide">今天 20:20</div>`,msg('王雨桐',T('王雨桐新消息1'),'friend'));
-   if(state.yutongStage>=2)parts.push(msg('王雨桐',T('王雨桐新消息2'),'friend'));
-   if(state.yutongStage>=3)parts.push(msg(state.playerId||'我',T('王雨桐回复'+(state.yutongReply||1)),'renter',true));
-   if(state.yutongStage>=4)parts.push(msg('王雨桐',T('王雨桐回应'+(state.yutongReply||1)+'第一条')||T('王雨桐后续消息1'),'friend'));
-   if(state.yutongStage>=5)parts.push(msg('王雨桐',T('王雨桐回应'+(state.yutongReply||1)+'第二条')||T('王雨桐后续消息2'),'friend'));
-   if(state.dayOneAsked&&state.dayOneChoice==='neighbor')parts.push(dayOneNeighborExtra());
+   const parts=[`<div class="day-divide">昨天</div>`];
+   const allNeighbor=neighborEntries();
+   for(let i=0;i<allNeighbor.length;i++){
+     if(i===4)parts.push(`<div class="day-divide">今天 20:20</div>`);
+     if(i===Math.min(5,allNeighbor.length-1) && state.dayOneAsked && state.dayOneChoice==='neighbor' && i===allNeighbor.length-2)parts.push(`<div class="day-divide">今天 20:44</div>`);
+     parts.push(msg(allNeighbor[i].speaker,allNeighbor[i].body,'friend',!!allNeighbor[i].mine));
+   }
    view.innerHTML=`<div class="screen chat-screen"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>王雨桐</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('王雨桐')}')">⋯</button></div><div class="scroll" id="neighbor-scroll"><div class="chat-messages">${parts.join('')}</div></div>${state.yutongStage===2?`<div class="reply-area">${[1,2,3].map(i=>`<button class="reply-option" onclick="replyNeighbor(${i})">${E('王雨桐回复'+i)}</button>`).join('')}</div>`:`<div class="chat-compose"><span>⊕</span><input disabled placeholder="暂时无法继续发送消息"/><span>☺</span></div>`}</div>`;
    document.querySelector('#neighbor-scroll').scrollTop=9999;return;
  }
@@ -312,13 +384,8 @@ function render(){if(typeof dayOneSync==='function')dayOneSync();document.body.d
    return;
  }
  if(state.page==='sms'){
-   const smsText=T('短信');
-   view.innerHTML=`${header('短信','home')}<div class="scroll native-shell"><div class="native-section-label">信息</div><button class="native-row" onclick="go('sms-detail')"><span class="n-icon">✉</span><span class="n-text"><strong>快递服务</strong><small>${clean(smsText.replace(/【快递服务】/g,'').slice(0,38))}</small></span><span class="n-tail">20:16　›</span></button></div>`;
-   return;
- }
- if(state.page==='sms-detail'){
-   view.innerHTML=`${header('快递服务','sms')}<div class="scroll native-shell"><div class="native-chat"><div class="native-time">今天　20:16</div><div class="native-text-bubble">${clean(T('短信').replace(/【快递服务】/g,'').trim())}</div></div></div>`;
-   return;
+  view.innerHTML=`${header('短信','home')}<div class="scroll native-shell"><div class="native-section-label">信息</div><div class="empty-state">暂无短信。<br>快递消息可以在微信的「服务通知」中查看。</div></div></div>`;
+  return;
  }
  if(state.page==='gallery'){
    view.innerHTML=`${header('相册','home')}<div class="scroll native-shell"><div class="native-section-label">最近项目 · 搬家那天</div><div class="native-gallery">${['客厅','房门','窗外'].map((label,i)=>`<button class="native-photo" onclick="state.selectedPhoto=${i};go('photo-preview')"><span class="photo-geom"></span><span>${label}</span></button>`).join('')}</div><div class="native-section-label">照片为场景占位，正式素材将在后续加入</div></div>`;
@@ -425,9 +492,9 @@ function go(p){
 function goBack(){
  cancelNarrative();
  const previous=(Array.isArray(state.navStack)?state.navStack:[]).pop();
- state.page=previous||'home'; if(state.page==='chat')markGroupRead(); if(state.page==='neighbor')markNeighborRead(); store();render(); scheduleGroupNarrative(); scheduleNeighborNarrative(); scheduleGroupReaction();
+ state.page=previous||'home';if(typeof dayOneSync==='function')dayOneSync(); if(state.page==='chat')markGroupRead(); if(state.page==='neighbor')markNeighborRead(); store();render(); scheduleGroupNarrative(); scheduleNeighborNarrative(); scheduleGroupReaction();
 }
-function goHome(){state.navStack=[];state.page='home';store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction()}
+function goHome(){if(typeof dayOneSync==='function')dayOneSync();state.navStack=[];state.page='home';store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction()}
 function setTheme(next){
  if(next!=='light'&&next!=='dark')return;
  state.theme=next;try{localStorage.setItem('resident_theme_set_v8','yes')}catch(e){}store();render();
