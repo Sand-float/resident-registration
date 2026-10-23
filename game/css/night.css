@@ -1,0 +1,41 @@
+.night-screen{position:absolute;inset:0;background:linear-gradient(155deg,#151b25 0%,#111318 52%,#17161c 100%);color:#eae6e9;display:flex;flex-direction:column;padding-top:24px;padding-bottom:10px;font-family:inherit}.night-top{height:42px;flex-shrink:0;display:flex;align-items:center;gap:15px;padding:0 20px;font-size:11px;color:#aaaeb8}.night-top button{background:transparent;color:#eee;font-size:29px;font-weight:200;padding:0 7px}.night-scroll{overflow:auto;min-height:0;flex:1;padding:24px 25px 35px}.night-kicker{display:block;color:#bc9b9e;letter-spacing:.26em;font-size:9px;margin-bottom:26px}.night-scroll h1{font-size:25px;font-weight:500;line-height:1.5;margin:0 0 24px;letter-spacing:.03em}.night-copy{font-size:14px;line-height:2;color:#c4c4cb}.night-copy p{margin:0 0 18px}.night-copy blockquote{background:#222630;border:1px solid #3b3941;margin:20px 0;padding:17px 14px;color:#ecdee0;border-left:2px solid #a57d88;border-radius:3px;font-size:13px;line-height:2}.night-actions{margin-top:32px;display:flex;flex-direction:column;gap:12px;padding-bottom:14px}.night-actions>button{min-height:48px;background:#28262c;color:#e9dce0;border:1px solid #51414a;border-radius:8px;font-size:13px;padding:12px}.night-actions>.night-primary{background:#b69b91;color:#181619;border-color:#b69b91;font-weight:600}.night-muted{color:#8c919d;font-size:12px!important}.night-clue-list{display:flex;flex-direction:column;border-top:1px solid #34353d;margin:20px 0}.night-clue-list button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;padding:17px 0;border-bottom:1px solid #34353d;background:transparent;color:#e8e6eb}.night-clue-list span{display:flex;flex-direction:column;gap:6px}.night-clue-list small{font-size:10px;color:#9998a5}.night-clue-list strong{font-size:15px;font-weight:550}.night-clue-list em{font-size:11px;color:#b4b3bb;font-style:normal;line-height:1.6}.night-clue-list b{color:#b8a0a5;font-weight:400}.night-evidence{padding:19px;background:#20252e;border:1px solid #42414a;font-size:13px;line-height:2.1;color:#d1d1d8;border-radius:7px;margin-bottom:23px}.night-locked{font-size:12px;color:#93919b;text-align:center}
+@media(max-width:360px){.night-scroll{padding:14px 18px 28px}.night-scroll h1{font-size:22px}.night-copy{font-size:13px}.night-actions{margin-top:20px}}
+/* Shared night action palette with the rest of the game's buttons. */
+.night-actions>button{background:#292c35;color:#f0e7ee;border-color:#5a505f;border-radius:9px}
+.night-actions>.night-primary{background:#bca9c6;border-color:#bca9c6;color:#24202b}
+.rr-repair{background:var(--wash,#f5f5f5);padding:15px 17px 38px;color:var(--ink,#25252b)}
+.rr-repair-heading{padding:15px 2px 20px;border-bottom:1px solid var(--border,#ddd)}
+.rr-repair-heading small{color:var(--text2,#888);font-size:10px;letter-spacing:.08em}
+.rr-repair-heading h2{font-size:21px;font-weight:550;margin:12px 0}
+.rr-repair-heading p{color:var(--text2,#888);font-size:12px;line-height:1.8}
+.rr-repair-options{display:flex;flex-direction:column;gap:0;margin:17px 0}
+.rr-repair-options>span{font-size:11px;color:var(--text2,#888);margin-bottom:10px}
+.rr-repair-options button{display:grid;grid-template-columns:1fr auto;gap:7px;width:100%;background:var(--card,#fff);border-bottom:1px solid var(--border,#ddd);padding:18px 14px;text-align:left;color:var(--ink,#222);align-items:center}
+.rr-repair-options strong{font-size:15px;font-weight:520}
+.rr-repair-options small{grid-column:1;color:var(--text2,#888);font-size:11px}
+.rr-repair-options b{grid-column:2;grid-row:1/3;color:var(--text2,#888)}
+.rr-repair-ticket{margin:22px 0;padding:20px 16px;background:var(--card,#fff);border:1px solid var(--border,#ddd);border-radius:10px}
+.rr-repair-ticket small{font-size:10px;color:var(--text2,#888)}
+.rr-repair-ticket h3{font-size:18px;font-weight:550;margin:10px 0 22px}
+.rr-repair-ticket p{font-size:13px;line-height:1.7;margin:10px 0;color:var(--ink,#222)}
+.rr-repair-ticket strong{font-weight:550}
+.rr-repair-ticket .rr-repair-foot{font-size:11px;color:var(--text2,#888);padding-top:18px;margin-top:20px;border-top:1px solid var(--border,#ddd)}
+.rr-night-action{width:100%;margin-top:14px}
+.rr-repair-empty{padding:26px 4px;color:var(--text2,#888);font-size:13px}
+
+/* 第一夜：现场确认门牌的小场景，不直接替玩家推理。 */
+.rr-repair-inspect{background:var(--card,#fff);border:1px solid var(--border,#ddd);border-radius:10px;margin-top:20px;padding:15px 14px;color:var(--ink,#222)}
+.rr-repair-inspect>span{font-size:11px;color:var(--text2,#999)}
+.rr-repair-inspect p{font-size:12px;line-height:1.8;margin:9px 0 12px}
+.rr-repair-inspect button{width:100%;border:1px solid var(--border,#ddd);padding:13px 12px;background:var(--wash,#f5f5f5);color:var(--ink,#333);text-align:left;border-radius:6px;font-size:13px}
+.rr-repair-inspect.checked{border-color:var(--border,#ddd)}
+.rr-plate-scene{display:flex;flex-direction:column;background:var(--wash,#f5f5f5);padding:18px;color:var(--ink,#24262b)}
+.rr-plate-art{height:220px;max-height:39%;display:flex;align-items:center;justify-content:center;border-radius:12px;overflow:hidden;background:#20252a;margin:9px 0 20px}
+.rr-plate-art img{width:100%;height:100%;object-fit:contain}
+.rr-plate-copy{flex:1}
+.rr-plate-copy span{font-size:11px;color:var(--text2,#aaa)}
+.rr-plate-copy h2{font-size:21px;font-weight:550;margin:14px 0}
+.rr-plate-copy p{font-size:13px;line-height:1.85;color:var(--ink,#333)}
+.rr-plate-action{margin-top:auto;min-height:48px;padding:13px;border-radius:9px;background:#bca9c6;color:#24202b;font-size:13px;font-weight:600}
+
+.night-actions>.night-primary{background:var(--rr-accent,#ba9dae)!important;color:var(--rr-accent-ink,#28212b)!important;border-color:var(--rr-accent,#ba9dae)!important}
