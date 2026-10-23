@@ -1,0 +1,12 @@
+《住户登记》单入口 · 多文件程序版
+
+根目录只有一个 index.html：它就是唯一的游戏入口。
+resident_game 文件夹只存放独立程序文件（JS、CSS、TXT、SVG、WAV），没有 index.html。
+
+GitHub 上传：解压后，把 index.html 和 resident_game 整个文件夹上传到 resident-registration 仓库根目录，提交。
+旧 resident_v2、resident_v3、旧 JS/CSS 等无需删除，它们不会被新入口引用。
+注意：GitHub 上过去上传的旧文件不会自动消失，但不参与新版运行。
+
+本次仅修正入口路径和 story.txt 加载路径，游戏剧情文字、结局与回溯代码从上一份纠错修复版原样保留。
+
+在电脑上双击根目录 index.html 即可试玩；在线 GitHub Pages 从根目录 index.html 加载。
