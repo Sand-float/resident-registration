@@ -1,0 +1,7 @@
+上传 GitHub Pages：
+把压缩包解压后的 index.html 与整个 game 文件夹上传到仓库根目录。
+根目录只保留一个 index.html；game 文件夹中没有第二个 index。
+game/js 放 JS 程序，game/css 放 CSS 样式，game/data 放可编辑剧本文字，game/assets 放图片，game/audio 放音效。
+旧版本资源即使仍在仓库，也不会被新版 index.html 引用。
+如浏览器显示缓存版本，尝试 Ctrl+Shift+R 强制刷新。
+音效：点击任何界面按钮后解锁，设置页面可关闭和重新开启。

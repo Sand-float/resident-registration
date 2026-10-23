@@ -8,7 +8,7 @@ const NIGHT_EVIDENCE={
  repair:{source:'物业服务 · 报事报修',title:'门牌报修单',text:'302 门牌只剩一颗螺丝固定，其余三个固定点已经松脱。我提交了门牌维修工单。'},
  oldticket:{source:'物业服务 · 历史工单',title:'短暂出现的历史工单',text:'物业服务中闪过一张更早的 302 室工单，联系人姓林。重新打开后却找不到了。'},
  access:{source:'物业服务 · 门禁记录',title:'异常门禁记录',text:'门禁记录显示，昨日深夜三栋有一次「未识别进入」，来源标注为未登记设备。'},
- body:{source:'手机桌面',title:'自行出现的应用',text:'手机桌面多出了「身体状态」，里面却已填好个人房号和身体数据。'},
+ body:{source:'手机桌面',title:'自行出现的应用',text:'吧啦吧啦……，里面记录了个人信息和身体数据。'},
  archive:{source:'物业服务 · 历史记录',title:'有意被隐藏的记录',text:'302 室一张旧工单一闪而过。它没有出现在可查询的工单列表里。'}
 };
 function nightRecordEvidence(id){
@@ -24,6 +24,7 @@ function nightRecordEvidence(id){
 function rrMigrateRemovedEvidence(){if(state.investigation?.hallway){delete state.investigation.hallway;store()}}
 function nightInvestigationEntries(){
  rrMigrateRemovedEvidence();
+ if(state.accessCluePromptedV6&&!state.investigation?.access){state.investigation=state.investigation||{};state.investigation.access=Date.now();store()}
  const found=[];
  if(state.checked||state.seenAnnouncement){if(state.checked)found.push(NIGHT_EVIDENCE.group);if(state.seenAnnouncement)found.push(NIGHT_EVIDENCE.notice)}
  for(const [id,e] of Object.entries(NIGHT_EVIDENCE)){if(!['group','notice'].includes(id)&&state.investigation?.[id])found.push(e)}

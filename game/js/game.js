@@ -1,5 +1,5 @@
 const view=document.querySelector('#view'), overlay=document.querySelector('#overlay-root');
-const defaultState={page:'intro',day:1,stage:0,checked:false,reply:false,replyChoice:0,stress:8,trust:70,clues:0,tab:'微信',playerId:'',avatar:0,profileDraft:'',theme:'dark',navStack:[],messageSpeed:2200,gameClockMinute:1216,storyRunId:'',storyCaptured:{},contactRemarks:{},seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneInquiryStep:0,dayOneInquiryTextChoice:0,dayOneInquirySentAt:0,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneMimiSentAt:0,mimiChatClock:'',dayOneFlowRevision:2,dayOneSlept:false,dayOneFinished:false,nightChoice:null,nightStep:0,nightCluesSeen:{},nightCurrentClue:null,storyEnding:null,nightAlertRead:false,groupAlertPending:false,groupAlertShown:false,groupAlertClock:'',anonStage:0,anonOpenedAt:0,anonAdvanceAt:0,anonSecondAt:0,accessCluePromptedV6:false,nightPhase:'idle',nightLinMessage:0,nightLinIssuedAt:0,nightLinOpenedAt:0,nightLinAsk:0,nightLinAskAt:0,nightRepairStatus:'',appRevealPending:false,nightPlateChecked:false,nightRepairAt:0,nightDoorStep:0,nightMistake:'',investigation:{},stamina:82,satiety:58,mood:72};
+const defaultState={page:'intro',day:1,stage:0,checked:false,reply:false,replyChoice:0,stress:8,trust:70,clues:0,tab:'微信',playerId:'',avatar:0,profileDraft:'',theme:'dark',navStack:[],messageSpeed:2200,gameClockMinute:1216,storyRunId:'',storyCaptured:{},contactRemarks:{},seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneInquiryStep:0,dayOneInquiryTextChoice:0,dayOneInquirySentAt:0,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneMimiSentAt:0,mimiIncoming:0,mimiIncomingAt:0,mimiRead:0,mimiChatClock:'',dayOneFlowRevision:2,dayOneSlept:false,dayOneFinished:false,nightChoice:null,nightStep:0,nightCluesSeen:{},nightCurrentClue:null,storyEnding:null,nightAlertRead:false,groupAlertPending:false,groupAlertShown:false,groupAlertClock:'',anonStage:0,anonOpenedAt:0,anonAdvanceAt:0,anonSecondAt:0,accessCluePromptedV6:false,nightPhase:'idle',nightLinMessage:0,nightLinIssuedAt:0,nightLinOpenedAt:0,nightLinAsk:0,nightLinAskAt:0,nightRepairStatus:'',appRevealPending:false,nightPlateChecked:false,nightRepairAt:0,nightDoorStep:0,nightMistake:'',investigation:{},stamina:82,satiety:58,mood:72};
 let storedState={};
 try{storedState=JSON.parse(localStorage.getItem('resident_register_v1')||'{}')||{}}catch(e){}
 const state={...defaultState,...storedState,page:'intro',navStack:[],phoneActivated:false,playerId:'',avatar:0,profileDraft:''};
@@ -36,7 +36,7 @@ function isViewingTarget(target){
 function advanceGroupMessage(){
  if(!state.phoneActivated)return;
  if(state.stage>=7)return;
- if(state.stage===3 && !state.seenAnnouncement)return;
+ if(state.stage===4 && !state.seenAnnouncement)return;
  if(state.stage===6 && !state.checked)return;
  state.stage=Math.min(7,(Number(state.stage)||0)+1);
  if(state.page==='chat')state.groupReadStage=groupMessageCount();
@@ -48,7 +48,7 @@ function advanceGroupMessage(){
 function scheduleGroupNarrative(){
  if(narrativeTimer){clearTimeout(narrativeTimer);narrativeTimer=null}
  if(!state.phoneActivated || state.reply || state.stage>=7)return;
- if(state.stage===3 && !state.seenAnnouncement)return;
+ if(state.stage===4 && !state.seenAnnouncement)return;
  if(state.stage===6 && !state.checked)return;
  const ms=state.stage===0?Math.max(Number(state.messageSpeed)||2200, (Number(state.phoneStartAt)||Date.now())+3600-Date.now()):Math.max(700,Number(state.messageSpeed)||2200);
  narrativeTimer=setTimeout(advanceGroupMessage,ms);
@@ -275,7 +275,7 @@ function linEntries(){
  if(state.nightChoice==='browse'&&Number(state.nightLinMessage)>=1){
    a.push({speaker:'小林',body:Number(state.nightLinMessage)===1?NIGHT_LIN_MESSAGE:'小林撤回了一条消息',system:Number(state.nightLinMessage)>=2});
    if([1,2].includes(state.nightLinAsk))a.push({speaker:'我',body:'小林，刚才那句话是什么意思？',mine:true});
-   if(state.nightLinAsk===2)a.push({speaker:'小林',body:'我也说不准，可能是以前留下的记录。不用在意。'});
+   if(state.nightLinAsk===2)a.push({speaker:'小林',body:'我刚翻错了一页旧工单。已经处理好了，你不用管。'});
  }
  return a;
 }
@@ -312,7 +312,7 @@ function neighborEntries(){
 }
 function mimiEntries(){
  if(!state.dayOneAsked||!dayOneAllDone())return directEntries('米米');
- const a=[...directEntries('米米'),{speaker:'米米',body:T('Day1闺蜜开场1')},{speaker:'米米',body:T('Day1闺蜜开场2')}];
+ const a=[...directEntries('米米')];if(state.mimiIncoming>=1)a.push({speaker:'米米',body:T('Day1闺蜜开场1')});if(state.mimiIncoming>=2)a.push({speaker:'米米',body:T('Day1闺蜜开场2')});
  if(state.dayOneMimiStep>=1)a.push({speaker:'我',body:T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),mine:true});
  if(state.dayOneMimiStep>=2)a.push({speaker:'米米',body:T('Day1闺蜜回应'+(state.dayOneMimiChoice||1))});
  if(state.dayOneMimiStep>=3)a.push({speaker:'我',body:T('Day1闺蜜玩家晚安')||'好呀，晚安～',mine:true});
@@ -338,7 +338,7 @@ function wechatRows(){
   ...(state.groupAlertShown?[{label:'',key:'anonymous',snippet:rrAnonPreview(),unread:state.anonOpenedAt?0:1,time:state.groupAlertClock||fictionalClock()}]:[]),
   {label:T('业主群名称')+' ('+groupCount()+')',key:'group',snippet:formatPreview(groupEntries(),true),unread:unreadGroupCount(),time:state.dayOneAsked&&state.dayOneChoice==='group'?rrTimeAt('20:44'):state.groupReactionReady?rrTimeAt('20:20'):'20:16'},
   {label:contactDisplay('妈妈'),key:'妈妈',snippet:formatPreview(directEntries('妈妈')),unread:0,time:'昨天'},
-  {label:contactDisplay('米米'),key:'米米',snippet:formatPreview(mimiEntries()),unread:0,time:state.dayOneMimiStep?(state.mimiChatClock||'20:48'):'昨天'},
+  {label:contactDisplay('米米'),key:'米米',snippet:formatPreview(mimiEntries()),unread:Math.max(0,(Number(state.mimiIncoming)||0)-(Number(state.mimiRead)||0)),time:state.dayOneMimiStep?(state.mimiChatClock||'20:48'):'昨天'},
   {label:contactDisplay('王雨桐'),key:'王雨桐',snippet:formatPreview(neighborEntries()),unread:unreadNeighborCount(),time:state.dayOneAsked&&state.dayOneChoice==='neighbor'?rrTimeAt('20:44'):state.yutongStage?rrTimeAt('20:20'):'昨天'},
   {label:contactDisplay('刘芳'),key:'刘芳',snippet:formatPreview(directEntries('刘芳')),unread:0,time:'昨天'},
   {label:contactDisplay('小林'),key:'小林',snippet:formatPreview(linEntries()),unread:state.nightChoice==='browse'&&state.nightLinMessage>=1&&!state.nightLinOpenedAt?1:0,time:state.nightLinMessage?(state.nightLinAsk===2?rrTimeAt('23:50'):state.nightLinMessage>=2?rrTimeAt('23:49'):rrTimeAt('23:46')):'昨天'},
@@ -356,12 +356,14 @@ function openWechatRow(key){
  if(key==='anonymous')rrOpenAnonymous();
  else if(key==='group')go('chat');
  else if(key==='service')go('service-notices');
- else openDirect(encodeURIComponent(key));
+ else if(key==='米米'&&state.dayOneAsked&&typeof dayOneAllDone==='function'&&dayOneAllDone())go('mimi-story');else openDirect(encodeURIComponent(key));
 }
 function visibleMoments(){
- return T('朋友圈').split('\n').filter(Boolean).map(line=>{
-    const idx=line.indexOf('：');return {name:idx>=0?line.slice(0,idx).trim():'',text:idx>=0?line.slice(idx+1).trim():line};
- }).filter(x=>getPerson(x.name).friend && x.name);
+ // Share one data source with contact profile moments rather than a partial handwritten feed.
+ return T('人物档案').split('\n').filter(Boolean).map(line=>{
+  const a=line.split('|');const name=(a[0]||'').trim(),post=(a[3]||'').trim();
+  return {name,text:post};
+ }).filter(x=>x.name&&x.text&&getPerson(x.name).friend);
 }
 const RR_SCENE_ASSETS=['game/assets/plate_loose.webp','game/assets/foyer_closed.webp','game/assets/foyer_ajar.webp'];
 const rrSceneCache=[];
@@ -375,7 +377,7 @@ function render(){
  const clockElement=document.getElementById('status-time');if(clockElement)clockElement.textContent=fictionalClock();
  if(typeof scheduleDayOneConversationReplies==='function')scheduleDayOneConversationReplies();
  if(typeof scheduleNightEvents==='function')scheduleNightEvents();
- if(state.page==='wechat'&&state.groupAlertPending)queueMicrotask(rrQueueGroupAlert);
+ if(state.page==='wechat'&&(state.groupAlertPending||(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.groupAlertShown)))queueMicrotask(rrQueueGroupAlert);
  document.body.dataset.theme=state.theme;document.body.dataset.page=state.page;
  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.theme==='dark'?'#24252b':'#f6f6f6');
  if(priorRulesScroll!==null&&priorRulesScroll!==undefined)queueMicrotask(()=>{const pane=document.querySelector('.rules-scroll');if(pane)pane.scrollTop=priorRulesScroll});
@@ -421,18 +423,18 @@ function render(){
    const chatParts=[];
    if(n>=1)chatParts.push(msg(T('群聊1发言人'),T('公告正文'),'black'));
    for(let i=2;i<=Math.min(7,n);i++){
-     if(i===4)chatParts.push(`<div class="day-divide">${E('群公告系统消息')}</div>`);
+     if(i===5&&state.seenAnnouncement)chatParts.push(`<div class="day-divide">${E('群公告系统消息')}</div>`);
      chatParts.push(msg(T('群聊'+i+'发言人'),T('群聊'+i+'正文'),i===4||i===7?'house':'friend'));
    }
    const allGroup=groupEntries();
    const baseCount=Math.min(n,7);
    for(const item of allGroup.slice(baseCount))chatParts.push(msg(item.speaker,item.body,'friend',!!item.mine));
-   const action=!state.seenAnnouncement&&n>=3?`<div class="reply-area"><div class="reply-hint">${E('群公告操作提示')}</div><button class="reply-option" onclick="openAnnouncement()">查看群公告 →</button></div>`:
+   const action=!state.seenAnnouncement&&n>=4?`<div class="reply-area"><div class="reply-hint">${E('群公告操作提示')}</div><button class="reply-option" onclick="openAnnouncement()">查看群公告 →</button></div>`:
      !state.seenAnnouncement?`<div class="chat-compose"><span>⊕</span><input disabled placeholder="有新消息正在进入…"/><span>☺</span></div>`:
      n>=6&&!state.checked?`<div class="reply-area"><div class="reply-hint">${E('查看成员操作提示')}</div><button class="reply-option" onclick="go('members')">查看群成员 →</button></div>`:
      n>=7&&!state.reply?`<div class="reply-area"><div class="reply-hint">选择回复，或暂不回复</div><button class="reply-option" onclick="reply(1)">${E('玩家回复1')}</button><button class="reply-option" onclick="reply(2)">${E('玩家回复2')}</button><button class="reply-option" onclick="finishGroup()">先不回复 →</button></div>`:
      `<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>`;
-   view.innerHTML=`<div class="screen chat-screen"><header class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2 style="font-size:15px">${E('业主群名称')} <small>(${groupCount()})</small></h2></div><button class="icon-btn" onclick="go('members')">⋯</button></header>${!state.seenAnnouncement && n>=1?`<button class="chat-pinned" onclick="openAnnouncement()">📌 未读群公告：${E('公告标题')}　›</button>`:''}<div class="scroll" id="chat-scroll"><div class="chat-messages"><div class="day-divide">${rrTimeAt('20:16')}</div>${chatParts.join('')}${state.checked&&!state.speedHintSeen?'<div class="rr-speed-hint">调节消息速度：手机「设置」→「消息播放速度」</div>':''}</div></div>${state.dayOneChoice==='group'?dayOneChatFooter():action}</div>`;
+   view.innerHTML=`<div class="screen chat-screen"><header class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2 style="font-size:15px">${E('业主群名称')} <small>(${groupCount()})</small></h2></div><button class="icon-btn" onclick="go('members')">⋯</button></header>${state.seenAnnouncement && n>=4?`<button class="chat-pinned" onclick="openAnnouncement()">📌 未读群公告：${E('公告标题')}　›</button>`:''}<div class="scroll" id="chat-scroll"><div class="chat-messages"><div class="day-divide">${rrTimeAt('20:16')}</div>${chatParts.join('')}${state.checked&&!state.speedHintSeen?'<div class="rr-speed-hint">调节消息速度：手机「设置」→「消息播放速度」</div>':''}</div></div>${state.dayOneChoice==='group'?dayOneChatFooter():action}</div>`;
    document.querySelector('#chat-scroll').scrollTop=9999;
    return;
  }
@@ -592,7 +594,7 @@ function beginPhoneExperience(){
  clearTimeout(bannerTimer);
  const oldBanner=document.getElementById('incoming-banner');
  if(oldBanner)oldBanner.remove();
- Object.assign(state,{phoneActivated:true,phoneStartAt:Date.now(),gameClockMinute:1216,stage:0,checked:false,reply:false,replyChoice:0,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,clues:0,stress:8,trust:70,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneInquiryStep:0,dayOneInquiryTextChoice:0,dayOneInquirySentAt:0,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneMimiSentAt:0,mimiChatClock:'',dayOneFlowRevision:2,dayOneSlept:false,dayOneFinished:false,nightChoice:null,nightStep:0,nightCluesSeen:{},nightCurrentClue:null,storyEnding:null,nightAlertRead:false,groupAlertPending:false,groupAlertShown:false,groupAlertClock:'',anonStage:0,anonOpenedAt:0,anonAdvanceAt:0,anonSecondAt:0,accessCluePromptedV6:false,nightPhase:'idle',nightLinMessage:0,nightLinIssuedAt:0,nightLinOpenedAt:0,nightLinAsk:0,nightLinAskAt:0,nightRepairStatus:'',appRevealPending:false,nightPlateChecked:false,nightRepairAt:0,nightDoorStep:0,nightMistake:'',investigation:{},stamina:82,satiety:58,mood:72});
+ Object.assign(state,{phoneActivated:true,phoneStartAt:Date.now(),gameClockMinute:1216,stage:0,checked:false,reply:false,replyChoice:0,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,clues:0,stress:8,trust:70,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneInquiryStep:0,dayOneInquiryTextChoice:0,dayOneInquirySentAt:0,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneMimiSentAt:0,mimiIncoming:0,mimiIncomingAt:0,mimiRead:0,mimiChatClock:'',dayOneFlowRevision:2,dayOneSlept:false,dayOneFinished:false,nightChoice:null,nightStep:0,nightCluesSeen:{},nightCurrentClue:null,storyEnding:null,nightAlertRead:false,groupAlertPending:false,groupAlertShown:false,groupAlertClock:'',anonStage:0,anonOpenedAt:0,anonAdvanceAt:0,anonSecondAt:0,accessCluePromptedV6:false,nightPhase:'idle',nightLinMessage:0,nightLinIssuedAt:0,nightLinOpenedAt:0,nightLinAsk:0,nightLinAskAt:0,nightRepairStatus:'',appRevealPending:false,nightPlateChecked:false,nightRepairAt:0,nightDoorStep:0,nightMistake:'',investigation:{},stamina:82,satiety:58,mood:72});
  store();
  go('home');
 }
@@ -646,7 +648,7 @@ function goBack(){
  cancelNarrative();
  if(['chat','neighbor','direct-chat','mimi-story','anonymous-chat'].includes(state.page)){
   const from=state.page;state.navStack=[];state.tab='微信';state.page='wechat';store();render();
-  if(from==='chat')rrQueueGroupAlert();
+  rrQueueGroupAlert();
   scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction();return;}
  const previous=(Array.isArray(state.navStack)?state.navStack:[]).pop();
  state.page=previous||'home';if(typeof dayOneSync==='function')dayOneSync(); if(state.page==='chat')markGroupRead(); if(state.page==='neighbor')markNeighborRead(); store();render(); scheduleGroupNarrative(); scheduleNeighborNarrative(); scheduleGroupReaction();
@@ -670,7 +672,7 @@ function setTheme(next){
 function openApp(a){const pages={'微信':'wechat','相册':'gallery','电话':'phone','短信':'sms','备忘录':'notes','物业服务':'property','设置':'settings','身体状态':'body-status'};go(pages[a])}
 function visibleClueCount(){return typeof nightInvestigationEntries==='function'?nightInvestigationEntries().length:(Number(state.clues)||0)}
 function groupCount(){return T('群成员名单').split('\n').filter(Boolean).length}
-function openAnnouncement(){state.seenAnnouncement=true;state.stage=Math.max(3,state.stage);if(typeof nightRecordEvidence==='function')nightRecordEvidence('notice');cancelNarrative();store();go('rules');scheduleGroupNarrative()}
+function openAnnouncement(){state.seenAnnouncement=true;state.stage=Math.max(4,state.stage);if(typeof nightRecordEvidence==='function')nightRecordEvidence('notice');cancelNarrative();store();go('rules');scheduleGroupNarrative()}
 function finishGroup(){state.reply=true;state.replyChoice=0;state.stage=7;state.yutongStage=1;state.groupReactionPending=false;store();render();if(!isViewingTarget('neighbor'))banner(T('王雨桐新消息1'),'王雨桐','neighbor');scheduleNeighborNarrative()}
 function replyNeighbor(choice){state.yutongReply=choice;state.yutongStage=3;store();render();scheduleNeighborNarrative()}
 function setSpeed(v){state.messageSpeed=v;state.speedHintSeen=true;store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction()}

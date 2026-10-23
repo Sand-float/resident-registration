@@ -101,3 +101,13 @@ button.rr-tree-node.is-unlocked{cursor:pointer}
 .rr-tree>.rr-tree-node{width:295px!important;min-width:0;max-width:295px;margin-left:18px;align-self:flex-start;}
 .rr-tree>.rr-tree-connector{align-self:flex-start;margin-left:165px;}
 .rr-tree>.rr-tree-split{align-self:flex-start;}
+
+/* True left-to-right story graph; vertical dimension is reserved for choices. */
+.rr-horizontal-viewport{width:100%;overflow-x:auto;overflow-y:hidden;touch-action:pan-x;overscroll-behavior-x:contain;border:1px solid #ffffff1a;border-radius:12px;background:#ffffff05;margin:10px 0 22px;}
+.rr-horizontal-canvas{position:relative;width:2250px;height:760px;}
+.rr-horizontal-links{position:absolute;inset:0;pointer-events:none;overflow:visible;}
+.rr-horizontal-links path{fill:none;stroke:#776375;stroke-width:1.5;opacity:.4;}
+.rr-horizontal-links path.is-seen{stroke:#d6aecb;stroke-width:2;opacity:1;}
+.rr-hnode{position:absolute;width:130px;height:49px;}
+.rr-hnode .rr-tree-node{width:100%;height:100%;min-width:0;min-height:0;margin:0;padding:7px 5px;box-sizing:border-box;}
+.rr-hnode .rr-tree-node strong{font-size:11px;}

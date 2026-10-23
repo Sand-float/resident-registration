@@ -127,8 +127,29 @@ function renderStoryArchivePage(){
  if(page==='story-nodes'){
   const archive=rrReadArchive(),unlocked=RR_NODES.filter(n=>archive.nodes[n.id]).length;
   const branchNode=id=>{const n=RR_NODES.find(item=>item.id===id);if(!n)return '';const available=!!archive.nodes[id];const tag=available?'button':'div';return `<${tag} class="rr-tree-node ${available?'is-unlocked':'is-locked'}" data-node="${id}" ${available?`onclick="rrAskRewind('${id}')" title="点击回溯"`:'aria-disabled="true"'}><strong>${clean(n.name)}</strong></${tag}>`};
-  const lane=ids=>ids.map(branchNode).join('<div class="rr-tree-connector"></div>');
-  view.innerHTML=`<section class="rr-archive"><div class="rr-archive-scroll">${rrArchiveHeader('STORY TREE','剧情回溯',`已抵达 ${unlocked} / ${RR_NODES.length} 个节点 · 点亮走过的道路`)}<div class="rr-tree">${lane(['phone','group-reply','neighbor-reply','status-discovery','investigate'])}<div class="rr-tree-split"><div class="rr-tree-path"><div class="rr-tree-branch-tag">危险的追问</div>${lane(['group-alert','group-ending'])}</div><div class="rr-tree-path"><div class="rr-tree-branch-tag">没有公开追问</div><div class="rr-tree-mini-split"><div>${branchNode('neighbor-ask')}</div><div>${branchNode('no-ask')}</div></div>${lane(['chores','mimi','night-choice'])}<div class="rr-tree-mini-split"><div>${lane(['sleep-branch','sleep-ending'])}</div><div>${lane(['late-screen','lin-withdraw'])}<div class="rr-tree-mini-split"><div>${lane(['quiet-night','ignored-ending'])}</div><div>${lane(['repair','repair-fixed','first-night'])}${lane(['late-misread','late-misread-end'])}</div></div></div></div></div></div></div><div class="rr-branch-history"><strong>曾经作出的选择</strong><div>${[['neighbor','问王雨桐'],['group','问物业群'],['none','暂时不问']].map(([id,label])=>`<span class="${archive.branches[id]?'seen':''}">${archive.branches[id]?'✓':'·'} ${label}</span>`).join('')}</div></div><p class="rr-explain">只记录确实经过的节点。回溯时恢复该节点当时的状态；已收录结局不会消失。</p><button class="rr-archive-foot" onclick="openEndingArchive()">查看结局图鉴 →</button></div></section>`;
+  // Horizontal time progression (x); choices branch vertically (y).
+  const layout={
+    'phone':[0,390],'group-reply':[1,390],'neighbor-reply':[2,390],'status-discovery':[3,390],'investigate':[4,390],
+    'group-alert':[5,105],'group-ending':[6,105],
+    'neighbor-ask':[5,300],'no-ask':[5,485],
+    'chores':[6,390],'mimi':[7,390],'night-choice':[8,390],
+    'sleep-branch':[9,90],'sleep-ending':[10,90],
+    'late-screen':[9,485],'lin-withdraw':[10,485],
+    'late-misread':[11,265],'late-misread-end':[12,265],
+    'quiet-night':[11,665],'ignored-ending':[12,665],
+    'repair':[11,485],'repair-fixed':[12,485],'first-night':[13,485]
+  };
+  const edges=[['phone','group-reply'],['group-reply','neighbor-reply'],['neighbor-reply','status-discovery'],['status-discovery','investigate'],
+    ['investigate','group-alert'],['group-alert','group-ending'],
+    ['investigate','neighbor-ask'],['investigate','no-ask'],['neighbor-ask','chores'],['no-ask','chores'],
+    ['chores','mimi'],['mimi','night-choice'],['night-choice','sleep-branch'],['sleep-branch','sleep-ending'],
+    ['night-choice','late-screen'],['late-screen','lin-withdraw'],['lin-withdraw','late-misread'],['late-misread','late-misread-end'],
+    ['lin-withdraw','quiet-night'],['quiet-night','ignored-ending'],['lin-withdraw','repair'],['repair','repair-fixed'],['repair-fixed','first-night']];
+  const step=158,originX=16,nodeW=130,nodeH=49;
+  const xy=id=>{const [x,y]=layout[id];return [originX+x*step,y]};
+  const paths=edges.map(([from,to])=>{const [x1,y1]=xy(from),[x2,y2]=xy(to);const sx=x1+nodeW,sy=y1+nodeH/2,ex=x2,ey=y2+nodeH/2;const bend=(sx+ex)/2;const lit=archive.nodes[from]&&archive.nodes[to];return `<path d="M${sx} ${sy} H${bend} V${ey} H${ex}" class="${lit?'is-seen':''}"/>`}).join('');
+  const positioned=RR_NODES.filter(n=>layout[n.id]).map(n=>{const [x,y]=xy(n.id);return `<div class="rr-hnode" style="left:${x}px;top:${y}px">${branchNode(n.id)}</div>`}).join('');
+  view.innerHTML=`<section class="rr-archive"><div class="rr-archive-scroll">${rrArchiveHeader('STORY TREE','剧情回溯',`已抵达 ${unlocked} / ${RR_NODES.length} 个节点 · 从左向右推进，上下为选择分支`)}<div class="rr-horizontal-viewport"><div class="rr-horizontal-canvas"><svg class="rr-horizontal-links" width="2250" height="760" viewBox="0 0 2250 760" aria-hidden="true">${paths}</svg>${positioned}</div></div><div class="rr-branch-history"><strong>曾经作出的选择</strong><div>${[['neighbor','问王雨桐'],['group','问物业群'],['none','暂时不问']].map(([id,label])=>`<span class="${archive.branches[id]?'seen':''}">${archive.branches[id]?'✓':'·'} ${label}</span>`).join('')}</div></div><p class="rr-explain">横向代表剧情先后，上下代表不同选择。仅已走过的节点可以回溯。</p><button class="rr-archive-foot" onclick="openEndingArchive()">查看结局图鉴 →</button></div></section>`;
   return true;
  }
  if(page==='story-endings'){
