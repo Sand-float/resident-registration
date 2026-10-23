@@ -5,8 +5,8 @@ const NIGHT_EVIDENCE={
  notice:{source:'微信 · 业主群',title:'物业否认的通知',text:'小林在群里否认发布过门牌核对通知，但那条通知仍留在聊天记录里。'},
  lin:{source:'微信 · 小林',title:'不合时宜的提醒',text:'小林深夜忽然提到楼层标识和报修记录，随即撤回。他为什么突然说这个？'},
  retract:{source:'微信 · 小林',title:'主动撤回',text:'我亲眼看见小林将一条重要私信撤回；微信列表也同步变成「撤回了一条消息」。'},
- repair:{source:'物业服务 · 报事报修',title:'门牌报修单',text:'我检查到 302 门牌右下角有翘边，在物业服务报修后出现一张待处理工单。'},
- hallway:{source:'房门 · 深夜',title:'被略过的房间',text:'门外的人核对到 302 室时停顿了一下，随后说「先跳过」，走向了下一间。'},
+ repair:{source:'物业服务 · 报事报修',title:'门牌报修单',text:'302 门牌只剩一颗螺丝固定，其余三个固定点已经松脱。我提交了门牌维修工单。'},
+ hallway:{source:'房门 · 深夜',title:'被略过的房间',text:'维修完成后，门外又有脚步声经过，最后没有停在 302 门前。'},
  oldticket:{source:'物业服务 · 历史工单',title:'短暂出现的历史工单',text:'物业服务中闪过一张更早的 302 室工单，联系人姓林。重新打开后却找不到了。'},
  access:{source:'物业服务 · 门禁记录',title:'异常门禁记录',text:'昨日深夜，302 室对应的门禁记录里出现一条来自未登记设备的进入信息。'},
  body:{source:'手机桌面',title:'自行出现的应用',text:'手机桌面多出了「身体状态」，里面却已填好个人房号和身体数据。'},
@@ -91,11 +91,11 @@ function nightHomeHint(){
  if(state.nightLinMessage===1)return `<div class="d1-home-tip d1-discovery"><span>微信 · 新消息</span><strong>小林发来了一条私信</strong><small>打开微信，看看他说了什么。</small></div>`;
  if(state.nightRepairStatus==='accepted')return `<div class="d1-home-tip d1-discovery"><span>物业服务</span><strong>你提交的报修有了新进度</strong><small>打开物业服务查看。</small></div>`;
  if(state.nightRepairStatus==='pending')return `<div class="d1-home-tip d1-discovery"><span>物业服务</span><strong>报修已经提交</strong><small>看看工单有没有被受理。</small></div>`;
- return `<div class="d1-home-tip d1-discovery"><span>23:49 · 夜深了</span><strong>手机上还有一条被撤回的消息</strong><small>你可以继续查看物业服务，也可以先结束今晚。</small><button onclick="nightQuietEnding()">收起手机，结束今晚 →</button></div>`;
+ return `<div class="d1-home-tip d1-discovery"><span>23:49 · 夜深了</span><strong>手机上还有一条被撤回的消息</strong><small>你可以继续查看物业服务，也可以先收起手机。</small><button onclick="nightQuietEnding()">收起手机 →</button></div>`;
 }
 function nightQuietEnding(){
- if(state.nightChoice!=='browse'||state.nightLinMessage!==2||state.storyEnding)return;
- nightSetEnding('day1-quiet');
+ if(state.nightChoice!=='browse'||state.nightLinMessage!==2||state.storyEnding||state.nightRepairStatus==='fixed')return;
+ state.nightChoice='ignored';state.nightStep=0;store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightStartBrowse(){
  if(!dayOneAllDone()||state.dayOneMimiStep<4)return;
@@ -110,10 +110,10 @@ function renderNightRepair(){
  if(state.page!=='repairs')return false;
  const browsing=state.nightChoice==='browse'&&state.nightLinMessage>=1&&!!state.nightLinOpenedAt;
  const status=state.nightRepairStatus||'';
- view.innerHTML=`${header('报事报修','property')}<div class="scroll rr-repair"><div class="rr-repair-heading"><small>锦苑花庭 · 住户服务</small><h2>报事报修</h2><p>在这里可以提交房屋相关的维修申请。</p></div>${!browsing?'<div class="rr-repair-empty">近期没有提交过报修。</div>':status?`<div class="rr-repair-ticket"><small>3栋 · 302室</small><h3>门牌标识松动</h3><p>报修单号：WX-302-0148</p><p>当前状态：<strong>${status==='accepted'?'待维修 · 暂缓现场核验':'正在受理'}</strong></p><p class="rr-repair-foot">${status==='accepted'?'已转入待维修队列。请勿重复提交。':'已收到申请，正在分配工单。'}</p></div>${status==='accepted'?`<button class="d1-primary rr-night-action" onclick="nightStartDoorScene()">放下手机，听见走廊里的动静 →</button>`:''}`:`${!state.nightPlateChecked?`<div class="rr-repair-inspect"><span>填写报修单前</span><p>提交报修需要填写实际故障。你还没有仔细看过门口的标识。</p><button onclick="nightOpenPlate()">去门口看一眼　›</button></div>`:`<div class="rr-repair-inspect checked"><span>现场查看</span><p>302 门牌右下角有一点翘起，像是胶没有粘牢。</p></div>`}${state.nightPlateChecked?`<div class="rr-repair-options"><span>请选择报修事项</span><button onclick="nightSubmitRepair('door')"><strong>门牌标识松动</strong><small>边角翘起、固定不牢</small><b>›</b></button><button onclick="nightSubmitRepair('other')"><strong>水电维修</strong><small>灯具、水管等设施故障</small><b>›</b></button></div>`:''}`}</div>`;
+ view.innerHTML=`${header('报事报修','property')}<div class="scroll rr-repair"><div class="rr-repair-heading"><small>锦苑花庭 · 住户服务</small><h2>报事报修</h2><p>在这里可以提交房屋相关的维修申请。</p></div>${!browsing?'<div class="rr-repair-empty">近期没有提交过报修。</div>':status?`<div class="rr-repair-ticket"><small>3栋 · 302室</small><h3>门牌标识松动</h3><p>报修单号：WX-302-0148</p><p>当前状态：<strong>${status==='fixed'?'已完成维修':status==='accepted'?'已派工 · 等待上门':'正在受理'}</strong></p><p class="rr-repair-foot">${status==='fixed'?'门牌已重新固定。':'已收到报修申请，等待现场处理。'}</p></div>${status==='accepted'?`<button class="d1-primary rr-night-action" onclick="nightStartDoorScene()">放下手机，留意门外的动静 →</button>`:''}`:`${!state.nightPlateChecked?`<div class="rr-repair-inspect"><span>填写报修单前</span><p>提交报修需要填写实际故障。你还没有仔细看过门口的标识。</p><button onclick="nightOpenPlate()">去门口看一眼　›</button></div>`:`<div class="rr-repair-inspect checked"><span>现场查看</span><p>302 门牌只剩左上角的一颗螺丝固定，另外三颗已经脱落，整块门牌向下歪斜。</p></div>`}${state.nightPlateChecked?`<div class="rr-repair-options"><span>请选择报修事项</span><button onclick="nightSubmitRepair('door')"><strong>门牌标识松动</strong><small>三处螺丝脱落，门牌倾斜</small><b>›</b></button><button onclick="nightSubmitRepair('other')"><strong>水电维修</strong><small>灯具、水管等设施故障</small><b>›</b></button></div>`:''}`}</div>`;
  return true;
 }
-function nightOpenPlate(){if(state.nightChoice!=='browse'||state.nightRepairStatus)return;go('night-plate')}
+function nightOpenPlate(){if(state.nightChoice!=='browse'||state.nightRepairStatus)return;if(typeof SoundFX!=='undefined')SoundFX.play('footsteps');go('night-plate')}
 function nightConfirmPlate(){if(state.nightChoice!=='browse'||state.nightRepairStatus)return;state.nightPlateChecked=true;store();go('repairs')}
 function nightSubmitRepair(type){
  if(state.nightChoice!=='browse'||state.nightLinMessage<1||state.nightRepairStatus)return;
@@ -126,17 +126,18 @@ function nightBeginMisread(reason){
  if(typeof SoundFX!=='undefined')SoundFX.play('anomaly');
  state.nightMistake=reason||'wait';
  state.nightChoice='misread';state.nightStep=0;
- store();go('night-danger');
+ store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightStartDoorScene(){
  if(state.nightChoice!=='browse'||state.nightRepairStatus!=='accepted')return;
- state.nightDoorStep=1;if(typeof SoundFX!=='undefined')SoundFX.play('door');store();go('night-door');
+ state.nightDoorStep=1;store();nightSceneSound('repair',1);go('night-door');
 }
 function nightContinueDoor(){
- if(state.nightChoice!=='browse'||state.nightRepairStatus!=='accepted')return;
+ if(state.nightChoice!=='browse'||!['accepted','fixed'].includes(state.nightRepairStatus))return;
  state.nightDoorStep=Math.min(4,Number(state.nightDoorStep||1)+1);
- if(state.nightDoorStep>=4){nightRecordEvidence('hallway');nightRecordEvidence('oldticket');nightSetEnding('day1-survivor');return}
- store();render();
+ if(state.nightDoorStep===3){state.nightRepairStatus='fixed';nightRecordEvidence('hallway');}
+ if(state.nightDoorStep>=4){if(state.nightRepairStatus!=='fixed')return;nightSetEnding('day1-survivor');return}
+ store();nightSceneSound('repair',state.nightDoorStep);render();
 }
 function nightBody(title,content,actions,eyebrow='23:50 · 锦苑花庭'){
  return `<div class="night-screen"><div class="night-top"><button onclick="goHome()" aria-label="返回桌面">‹</button><span>${clean(eyebrow)}</span></div><div class="night-scroll"><span class="night-kicker">THE FIRST NIGHT</span><h1>${clean(title)}</h1><div class="night-copy">${content}</div><div class="night-actions">${actions}</div></div></div>`;
@@ -145,62 +146,64 @@ function beginNightDanger(kind){
  if(!['group','sleep'].includes(kind))return;
  if(kind==='sleep'&&(!dayOneAllDone()||state.dayOneMimiStep<4))return;
  if(kind==='group'&&!(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2))return;
- state.nightChoice=kind;state.nightStep=0;state.nightAlertRead=false;store();go('night-danger');
+ state.nightChoice=kind;state.nightStep=0;state.nightAlertRead=false;store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightAdvanceDanger(){
- if(!['sleep','group','misread'].includes(state.nightChoice)||state.storyEnding)return;
+ if(!['sleep','group','misread','ignored'].includes(state.nightChoice)||state.storyEnding)return;
  state.nightStep=Math.min(4,(Number(state.nightStep)||0)+1);
  if(state.nightStep>=4){nightSetEnding(state.nightChoice==='group'?'day1-group-death':'day1-sleep-death');return}
- store();render();
+ store();nightSceneSound('danger',state.nightStep);render();
 }
 function nightSetEnding(id){
  if(state.storyEnding)return;
  nightCancelTimers();state.storyEnding=id;state.nightStep=4;state.dayOneFinished=true;
- state.page=['day1-survivor','day1-quiet'].includes(id)?'day-end':'night-ending';state.navStack=[];
+ state.page=id==='day1-survivor'?'day-end':'night-ending';state.navStack=[];
  store();if(typeof rrSaveEnding==='function')rrSaveEnding(id);render();
+}
+// Scene sound cues are triggered by user navigation, not render(), to avoid repeat on refresh.
+function nightSceneSound(route,step){
+ if(typeof SoundFX==='undefined')return;
+ if(route==='repair'){if(step===1)SoundFX.play('footsteps');if(step===2)SoundFX.play('repair');if(step===3)SoundFX.play('confirm');}
+ if(route==='danger'){if(step===0)SoundFX.play('footsteps');if(step===2)SoundFX.play('latch');if(step===3)SoundFX.play('open');}
+}
+function rrCG(which,caption,lines,button,label,anim='still'){
+ const name={loose:'plate_loose',closed:'foyer_closed',ajar:'foyer_ajar'}[which]||'foyer_closed';
+ return `<section class="rr-cg-scene"><div class="rr-cg-visual ${clean(anim)}"><img src="game/assets/${name}.webp" alt="${clean(caption)}"></div><div class="rr-cg-vignette"></div><div class="rr-cg-panel"><small>${clean(caption)}</small><p>${lines}</p><button class="rr-cg-next" onclick="${button}">${clean(label)} <span>›</span></button></div></section>`;
 }
 function renderNightPage(){
  if(state.page==='night-plate'){
-  view.innerHTML=`${header('302 室 · 门口','repairs')}<div class="scroll rr-plate-scene"><div class="rr-plate-art"><img src="game/assets/door.svg" alt="家门和门牌"/></div><div class="rr-plate-copy"><span>23:54 · 302 室</span><h2>门牌</h2><p>你走到门边，发现写着 302 的标识右下角微微翘起。</p><p>大概是搬进来时没注意到。现在再看，确实没有粘牢。</p></div><button class="rr-plate-action" onclick="nightConfirmPlate()">拍张照片，回去填写报修 →</button></div>`;
+  view.innerHTML=rrCG('loose','302 室 · 门外', '你走到房门外。<br>302 的门牌斜挂着，只剩左上角一颗螺丝还固定在墙上。<br>另外三处固定点已经松脱。','nightConfirmPlate()','拍下门牌，回去填写报修','approach');
   return true;
  }
  if(state.page==='day1-night'){
   view.innerHTML=nightBody('手机还亮着',`<p>和米米道完晚安，房间渐渐安静下来。</p><p>纸箱靠在墙边。你看了一眼手机，又想起群里那条说不清来历的通知。</p><p>现在做什么？</p>`,`<button class="night-primary" onclick="beginNightDanger('sleep')">关灯睡觉</button><button onclick="nightStartBrowse()">再刷刷手机</button>`,'23:42 · 睡前');return true;
  }
  if(state.page==='night-danger'){
-  const group=state.nightChoice==='group',i=Math.min(3,Number(state.nightStep)||0);
-  const misread=state.nightChoice==='misread';
-  const scenes=misread?[
-   ['普通报修',`<p>你在物业服务里选了「水电维修」。提交成功后，手机回到桌面。</p><p>没有人回复你。小林撤回的那句话也不见了。</p><p>过了一会儿，走廊里传来一声轻轻的金属碰撞。</p>`,'回到房门前'],
-   ['302',`<p>走廊里有人站在你家门外，像是在一张纸上对照数字。</p><p>他念出了三栋、三层，然后停在了 302。</p><p>手机里那张水电工单仍写着「已提交」，再没有任何变化。</p>`,'仔细听'],
-   ['那张表',`<p>你想起小林那句没头没尾的话：楼层标识、报修记录。</p><p>水电工单并没有改变门牌那一栏的记录。你忽然觉得自己理解错了。</p><p>门外有人低声说：</p><blockquote>这户的标识还在。继续。</blockquote>`,'屏住呼吸'],
-   ['无人应答',`<p>你还没来得及重新打开物业服务，门锁已经轻轻转动。</p><p>屏幕亮了，又暗下去。聊天列表里仍然只剩那条撤回通知。</p>`,'查看结局']
-  ]:group?[
-   ['突然的私信',`<p>你刚在群里问出那个问题，小林只回了一句：</p><blockquote>别在群里说。稍后联系你。</blockquote><p>然而半分钟过去，发来私信的不是小林，而是一个头像全黑的账号。</p><blockquote>302。</blockquote>`,'查看消息'],
-   ['楼道的声音',`<p>你想把聊天往上划，却发现那条黑头像的通知怎么也无法删除。</p><p>走廊里响起金属摩擦的轻响。有人在门外，挨个查看门牌。</p><p>紧接着，有人准确喊出了你刚才在群里说过的房号。</p>`,'关掉屏幕'],
-   ['不该出现的人',`<p>猫眼外的灯忽明忽暗。门口传来很轻的声音：</p><blockquote>我们只找刚才在群里提问的住户。</blockquote><p>你屏住呼吸，没有回答。然而门锁里传来了第二个人拧动钥匙的声音。</p>`,'继续'],
-   ['302',`<p>你突然意识到，自己亲口在群里说出了房号，还问了他们不想回答的问题。</p><p>手机在掌心里振动。小林终于发来一句话：</p><blockquote>我已经尽力了。对不起。</blockquote><p>门开了。</p>`,'查看结局']
-  ]:[
-   ['准备入睡',`<p>你关了灯，房间很快只剩窗外的微光。</p><p>刚躺下，走廊里传来一声轻响，像钥匙碰到了门牌。</p><p>你以为是隔壁有人回来，没有在意。</p>`,'闭上眼睛'],
-   ['有人在外面',`<p>脚步声靠近，又停住。</p><p>门外的人没有按门铃，只沿着门框缓缓摸索。</p><p>你半梦半醒，觉得那声音离自己很远。</p>`,'继续'],
-   ['那是谁',`<p>不知过了多久，一阵细微的敲击声传来。</p><p>有人隔着门轻声喊出你的名字，语调和白天在微信里听到的声音一模一样。</p><p>你猛地清醒，却发现卧室门已经被推开了一条缝。</p>`,'继续'],
-   ['没有来电',`<p>手机屏幕没有亮，也没有任何消息。</p><p>门外传来最后一次脚步声——只是这次，它已经在房间里面。</p>`,'查看结局']
+  const step=Math.min(3,Number(state.nightStep)||0);
+  const lines=[
+   ['楼道里有脚步声。<br>由远及近，越来越清楚。','仔细听','approach'],
+   ['脚步声停在门外。<br>没有门铃，也没有人说话。','继续','still'],
+   ['咔哒。<br>门锁传来转动的声音。','看向房门','tremble'],
+   ['门被推开了一条缝。<br>走廊里没有灯光。','查看结局','reveal']
   ];
-  const [title,body,action]=scenes[i];view.innerHTML=nightBody(title,body,`<button class="night-primary" onclick="nightAdvanceDanger()">${action} →</button>`,group?'22:19 · 异常问询':'23:46 · 深夜');return true;
+  const [copy,action,animation]=lines[step];
+  view.innerHTML=rrCG(step===3?'ajar':'closed',step===0?'深夜 · 302 室':'302 室 · 玄关',copy,'nightAdvanceDanger()',action,animation);
+  return true;
  }
  if(state.page==='night-door'){
-  const step=Math.min(3,Number(state.nightDoorStep||1));
+  const step=Math.min(3,Math.max(1,Number(state.nightDoorStep)||1));
   const scenes={
-   1:['走廊',`<p>你刚把手机放下，门外就响起了脚步声。</p><p>先停在 301 室，又慢慢向这边靠近。</p><p>有人拿着什么东西，轻轻碰了一下 302 的门。</p>`,'再听一会儿'],
-   2:['停顿',`<p>门外的人翻动着一份纸质名单，又像是在核对手机上的什么记录。</p><p>很久以后，一个模糊的声音说：</p><blockquote>这间状态不对。先跳过。</blockquote><p>脚步声向走廊尽头移去。</p>`,'继续'],
-   3:['凌晨',`<p>你打开物业服务。刚才那张工单还在：</p><blockquote>门牌标识松动 · 待维修。</blockquote><p>楼道重新安静下来。你没有睡着，却终于可以稍稍松开握紧手机的手。</p><p>你截下了工单。返回上一页时，历史记录里短暂闪过另一张三栋 302 室的旧工单，联系人姓林。再打开，却找不到了。</p>`,'保存线索']
+   1:['走廊里传来几声脚步。<br>你放下手机，朝玄关走去。','靠近房门','approach'],
+   2:['脚步停了。<br>门外传来螺丝刀旋动、金属轻轻碰撞的声音。<br>声音持续了一会儿。','继续听','still'],
+   3:['工具声停下，脚步声渐渐远去。<br>你再次查看报修单，状态已经更新为「已完成维修」。<br>门牌重新固定好了。','保存工单记录','still']
   };
-  const [title,body,action]=scenes[step];
-  view.innerHTML=nightBody(title,body,`<button class="night-primary" onclick="nightContinueDoor()">${action} →</button>`,'00:07 · 302 室');return true;
+  const [copy,action,animation]=scenes[step];
+  view.innerHTML=rrCG('closed','00:07 · 302 室 · 玄关',copy,'nightContinueDoor()',action,animation);
+  return true;
  }
  if(state.page==='night-ending'){
   const group=state.storyEnding==='day1-group-death';
-  view.innerHTML=nightBody(group?'BE 01 · 被点名的人':'BE 02 · 门外的脚步',group?`<p>今晚来访的人，知道了你在群里留下的房号。</p><p>小林知道发生了什么，却不敢公开帮你。你成为那条陌生通知后第一个被敲门的人。</p>`:state.nightMistake?`<p>你记得小林提起维修，却没留意他说的是哪一种标识。</p><p>深夜来访者仍然在表上找到了 302 室。等你终于想通，已经太晚了。</p>`:`<p>你把手机放在一旁，像平常一样睡去。</p><p>没有任何系统替你做确认。只是有人按照门牌找到了你的房间，而你没能醒来。</p>`,`<button class="night-primary" onclick="openStoryNodes()">剧情回溯 · 改变选择 →</button><button onclick="openEndingArchive()">查看结局图鉴</button><button onclick="returnDayOneTitle()">返回标题</button>`,'DAY 1 · 失败结局');return true;
+  view.innerHTML=nightBody(group?'BE 01 · 被点名的人':'BE 02 · 门外的脚步',group?`<p>那条通知没有消失。</p><p>你的房门被打开了。你没能等到天亮。</p>`:`<p>302 的门牌没有得到维修。</p><p>脚步停在门前。门锁转动，房门被打开。</p><p>第一夜到此结束。</p>`,`<button class="night-primary" onclick="openStoryNodes()">剧情回溯</button><button onclick="openEndingArchive()">查看结局图鉴</button><button onclick="returnDayOneTitle()">返回标题</button>`,'DAY 1 · 失败结局');return true;
  }
  return false;
 }

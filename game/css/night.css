@@ -39,3 +39,21 @@
 .rr-plate-action{margin-top:auto;min-height:48px;padding:13px;border-radius:9px;background:#bca9c6;color:#24202b;font-size:13px;font-weight:600}
 
 .night-actions>.night-primary{background:var(--rr-accent,#ba9dae)!important;color:var(--rr-accent-ink,#28212b)!important;border-color:var(--rr-accent,#ba9dae)!important}
+
+/* 夜间 CG：参考交互视觉小说的镜头移动节奏，统一独立背景与浮层文本。 */
+.rr-cg-scene{position:absolute;inset:0;overflow:hidden;background:#ece6e3;color:#f9f4f6}
+.rr-cg-visual{position:absolute;inset:0;overflow:hidden}
+.rr-cg-visual img{width:100%;height:100%;object-fit:cover;object-position:center;display:block;will-change:transform}
+.rr-cg-visual.approach img{animation:rrStepIn 2.1s cubic-bezier(.2,.65,.2,1) both}
+.rr-cg-visual.tremble img{animation:rrDoorShake 1s ease-out both}
+.rr-cg-visual.reveal img{animation:rrDoorReveal 1.9s ease-out both}
+@keyframes rrStepIn{0%{transform:scale(1.01) translateY(5px)}18%{transform:scale(1.025) translateY(-3px)}33%{transform:scale(1.04) translateY(4px)}48%{transform:scale(1.057) translateY(-3px)}66%{transform:scale(1.075) translateY(3px)}83%{transform:scale(1.095) translateY(-2px)}100%{transform:scale(1.12) translateY(0)}}
+@keyframes rrDoorShake{0%,17%,44%,74%,100%{transform:translateX(0)}12%,29%{transform:translateX(-3px)}23%,40%{transform:translateX(3px)}55%{transform:translateX(-1px)}}
+@keyframes rrDoorReveal{0%{filter:brightness(.83);transform:scale(1.04)}100%{filter:brightness(.96);transform:scale(1.1)}}
+.rr-cg-vignette{position:absolute;inset:20% 0 0;pointer-events:none;background:linear-gradient(180deg,transparent 15%,#11162305 42%,#10111bcc 79%,#11101ef2 100%)}
+.rr-cg-panel{position:absolute;bottom:0;left:0;right:0;padding:16px 22px max(32px,env(safe-area-inset-bottom));z-index:1}
+.rr-cg-panel small{color:#ebdce3;font-size:10px;letter-spacing:.16em}
+.rr-cg-panel p{font-size:13px;color:#fff7fa;line-height:1.9;margin:11px 0 19px;min-height:75px;text-shadow:0 1px 5px #10121d99}
+.rr-cg-next{background:#efe3e7e8;color:#333139;border-radius:8px;width:100%;min-height:48px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:550}
+.rr-cg-next span{font-size:19px}
+@media(prefers-reduced-motion:reduce){.rr-cg-visual img{animation:none!important}}

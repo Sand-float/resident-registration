@@ -71,3 +71,9 @@
 .rr-tree-mini-split{gap:6px;margin-top:16px}
 .rr-tree-mini-split>div{display:flex;flex-direction:column;align-items:center;min-width:0;width:100%}
 @media(max-width:350px){.rr-tree-split{gap:6px}.rr-tree-node{padding:9px 8px}.rr-tree-node strong{font-size:10.5px}.rr-tree-node button{font-size:9px}}
+
+/* 回溯节点只保留可点击的简短标题，走过的亮，没走过的暗。 */
+.rr-tree-node{width:100%;min-height:55px;display:flex;align-items:center;justify-content:center;text-align:center;padding:10px 8px;appearance:none;cursor:default;font:inherit}
+button.rr-tree-node.is-unlocked{cursor:pointer}
+.rr-tree-node strong{font-size:12px;line-height:1.45;text-align:center;font-weight:550}
+.rr-tree-node:hover.is-unlocked{border-color:#f0cbdf;background:#564258}

@@ -5,31 +5,32 @@
 const RR_ARCHIVE_KEY='resident_registration_archive_v2';
 const RR_ARCHIVE_VERSION=2;
 const RR_NODES=[
- {id:'phone',name:'手机里的第一条消息',tag:'20:16 · 开场',desc:'这晚的消息从这里开始。',page:'home',ready:s=>!!s.phoneActivated},
- {id:'group-reply',name:'陌生群公告',tag:'微信群 · 调查',desc:'群里有人指出那条奇怪的通知。',page:'chat',ready:s=>s.stage>=7&&!s.reply},
- {id:'neighbor-reply',name:'隔壁的邻居',tag:'微信私聊 · 选择',desc:'认识住在 301 的王雨桐。',page:'neighbor',ready:s=>s.yutongStage===2&&!s.yutongReply},
- {id:'status-discovery',name:'桌面多出的图标',tag:'手机桌面 · 异常',desc:'发现那款从未安装过的应用。',page:'home',ready:s=>s.dayOneUnlocked&&!s.dayOneBodySeen},
- {id:'investigate',name:'问，还是不问？',tag:'身体状态 · 分岔',desc:'看完身体数据后选择如何回应。',page:'day1-choose',ready:s=>s.dayOneBodySeen&&!s.dayOneChoice},
- {id:'group-alert',name:'公开追问',tag:'危险支线',desc:'在群里向小林提出敏感问题。',page:'chat',ready:s=>s.dayOneChoice==='group'&&s.dayOneInquiryStep===2&&!s.nightChoice},
- {id:'group-ending',name:'被点名的人',tag:'BE 01',desc:'群聊里的追问导致的结局。',page:'night-ending',ready:s=>s.storyEnding==='day1-group-death'},
- {id:'neighbor-ask',name:'私下问王雨桐',tag:'邻居支线',desc:'向隔壁邻居确认自己的疑惑。',page:'neighbor',ready:s=>s.dayOneChoice==='neighbor'&&s.dayOneInquiryStep===2&&!s.nightChoice},
+ {id:'phone',name:'查看手机',tag:'20:16 · 开场',desc:'这晚的消息从这里开始。',page:'home',ready:s=>!!s.phoneActivated},
+ {id:'group-reply',name:'查看群公告',tag:'微信群 · 调查',desc:'群里有人指出那条奇怪的通知。',page:'chat',ready:s=>s.stage>=7&&!s.reply},
+ {id:'neighbor-reply',name:'查看邻居消息',tag:'微信私聊 · 选择',desc:'认识住在 301 的王雨桐。',page:'neighbor',ready:s=>s.yutongStage===2&&!s.yutongReply},
+ {id:'status-discovery',name:'发现新应用',tag:'手机桌面 · 异常',desc:'发现那款从未安装过的应用。',page:'home',ready:s=>s.dayOneUnlocked&&!s.dayOneBodySeen},
+ {id:'investigate',name:'决定是否询问',tag:'身体状态 · 分岔',desc:'看完身体数据后选择如何回应。',page:'day1-choose',ready:s=>s.dayOneBodySeen&&!s.dayOneChoice},
+ {id:'group-alert',name:'群内追问',tag:'危险支线',desc:'在群里向小林提出敏感问题。',page:'chat',ready:s=>s.dayOneChoice==='group'&&s.dayOneInquiryStep===2&&!s.nightChoice},
+ {id:'group-ending',name:'被点名',tag:'BE 01',desc:'群聊里的追问导致的结局。',page:'night-ending',ready:s=>s.storyEnding==='day1-group-death'},
+ {id:'neighbor-ask',name:'询问王雨桐',tag:'邻居支线',desc:'向隔壁邻居确认自己的疑惑。',page:'neighbor',ready:s=>s.dayOneChoice==='neighbor'&&s.dayOneInquiryStep===2&&!s.nightChoice},
  {id:'no-ask',name:'暂时不问',tag:'沉默支线',desc:'先不问别人，做自己的事。',page:'home',ready:s=>s.dayOneChoice==='none'&&s.dayOneAsked&&!s.nightChoice},
- {id:'chores',name:'收拾新家',tag:'家务 · 自由行动',desc:'整理纸箱、检查门窗、吃点东西。',page:'notes',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&!Object.values(s.dayOneTasks||{}).some(Boolean)},
- {id:'mimi',name:'给米米发消息',tag:'微信 · 夜谈',desc:'待办结束，和闺蜜聊聊今晚。',page:'mimi-story',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&typeof dayOneAllDone==='function'&&dayOneAllDone()&&s.dayOneMimiStep===0},
- {id:'night-choice',name:'晚安以后的决定',tag:'夜晚 · 分岔',desc:'关灯睡觉，还是再刷刷手机？',page:'day1-night',ready:s=>s.dayOneChoice!=='group'&&s.dayOneMimiStep>=4&&!s.nightChoice&&!s.storyEnding},
+ {id:'chores',name:'完成待办',tag:'家务 · 自由行动',desc:'整理纸箱、检查门窗、吃点东西。',page:'notes',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&!Object.values(s.dayOneTasks||{}).some(Boolean)},
+ {id:'mimi',name:'和米米聊天',tag:'微信 · 夜谈',desc:'待办结束，和闺蜜聊聊今晚。',page:'mimi-story',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&typeof dayOneAllDone==='function'&&dayOneAllDone()&&s.dayOneMimiStep===0},
+ {id:'night-choice',name:'睡前选择',tag:'夜晚 · 分岔',desc:'关灯睡觉，还是再刷刷手机？',page:'day1-night',ready:s=>s.dayOneChoice!=='group'&&s.dayOneMimiStep>=4&&!s.nightChoice&&!s.storyEnding},
  {id:'sleep-branch',name:'直接睡觉',tag:'危险支线',desc:'熄灯后听到走廊里的脚步。',page:'night-danger',ready:s=>s.nightChoice==='sleep'&&!s.storyEnding},
- {id:'sleep-ending',name:'门外的脚步',tag:'BE 02',desc:'未能察觉来访者的结局。',page:'night-ending',ready:s=>s.nightChoice==='sleep'&&s.storyEnding==='day1-sleep-death'},
- {id:'late-screen',name:'再刷刷手机',tag:'手机调查',desc:'放下睡意，继续检查手机。',page:'home',ready:s=>s.nightChoice==='browse'&&s.nightPhase==='waiting'},
- {id:'lin-withdraw',name:'小林撤回的消息',tag:'微信 · 限时事件',desc:'收到后又被撤回的私信。',page:'direct-chat',ready:s=>s.nightChoice==='browse'&&s.nightLinMessage===2},
- {id:'late-misread',name:'误解了那句话',tag:'手机调查 · 危险分岔',desc:'按普通维修理解小林的暗示。',page:'night-danger',ready:s=>s.nightChoice==='misread'&&!s.storyEnding},
- {id:'late-misread-end',name:'门外的脚步',tag:'BE 02 · 错误路线',desc:'门牌仍在核对名单上。',page:'night-ending',ready:s=>s.nightChoice==='misread'&&s.storyEnding==='day1-sleep-death'},
- {id:'repair',name:'门牌标识报修',tag:'物业服务 · 操作',desc:'查看门牌并留下报修记录。',page:'repairs',ready:s=>s.nightRepairStatus==='accepted'&&!s.storyEnding},
- {id:'quiet-night',name:'没有新的消息',tag:'Day 1 · 暂时平静',desc:'追问或沉默都没能得到更明确的回复。',page:'day-end',ready:s=>s.storyEnding==='day1-quiet'},
+ {id:'sleep-ending',name:'门外脚步',tag:'BE 02',desc:'未能察觉来访者的结局。',page:'night-ending',ready:s=>s.nightChoice==='sleep'&&s.storyEnding==='day1-sleep-death'},
+ {id:'late-screen',name:'继续看手机',tag:'手机调查',desc:'放下睡意，继续检查手机。',page:'home',ready:s=>s.nightChoice==='browse'&&s.nightPhase==='waiting'},
+ {id:'lin-withdraw',name:'查看小林私信',tag:'微信 · 限时事件',desc:'收到后又被撤回的私信。',page:'direct-chat',ready:s=>s.nightChoice==='browse'&&s.nightLinMessage===2},
+ {id:'late-misread',name:'错误报修',tag:'手机调查 · 危险分岔',desc:'按普通维修理解小林的暗示。',page:'night-danger',ready:s=>s.nightChoice==='misread'&&!s.storyEnding},
+ {id:'late-misread-end',name:'门外脚步',tag:'BE 02 · 错误路线',desc:'门牌仍在核对名单上。',page:'night-ending',ready:s=>s.nightChoice==='misread'&&s.storyEnding==='day1-sleep-death'},
+ {id:'repair',name:'提交门牌报修',tag:'物业服务 · 操作',desc:'查看门牌并留下报修记录。',page:'repairs',ready:s=>['accepted','fixed'].includes(s.nightRepairStatus)&&!s.storyEnding},
+ {id:'quiet-night',name:'放下手机',tag:'深夜 · 危险',desc:'没有维修门牌。',page:'night-danger',ready:s=>s.nightChoice==='ignored'&&!s.storyEnding},
+ {id:'repair-fixed',name:'门牌修好',tag:'物业维修',desc:'听见工具声后，确认维修结束。',page:'night-door',ready:s=>s.nightRepairStatus==='fixed'&&!s.storyEnding},
+ {id:'ignored-ending',name:'未维修死亡',tag:'BE 02',desc:'没有修理门牌。',page:'night-ending',ready:s=>s.nightChoice==='ignored'&&s.storyEnding==='day1-sleep-death'},
  {id:'first-night',name:'第一夜幸存',tag:'Day 1 · 生还',desc:'门外的人略过了 302 室。',page:'day-end',ready:s=>s.storyEnding==='day1-survivor'}
 ];
 const RR_ENDINGS=[
- {id:'day1-quiet',name:'第一夜 · 暂时平静',kind:'neutral',chapter:1,summary:'读过撤回的消息，也没有再向下追查。小林没有给出更明确的答复。夜里没有新的消息，疑问依旧留在手机上。'},
- {id:'day1-survivor',name:'第一夜 · 暂缓核对',kind:'survival',chapter:1,summary:'小林冒险撤回的消息给了你一条生路。你看到小林撤回的那句提醒，检查了门牌，留下真实的报修记录；来访者因此跳过这扇门。'},
+ {id:'day1-survivor',name:'第一夜 · 幸存',kind:'survival',chapter:1,summary:'你读到小林撤回的消息，查看门牌并报修。维修工到场，重新固定了 302 的门牌。这一夜，你活了下来。'},
  {id:'day1-group-death',name:'BE 01 · 被点名的人',kind:'bad',chapter:1,summary:'在业主群里公开追问以后，异常的来访者知道了你的房号，也知道你在怀疑什么。'},
  {id:'day1-sleep-death',name:'BE 02 · 门外的脚步',kind:'bad',chapter:1,summary:'第一夜，302 室没能从门牌核验名单里消失。你可能太早睡去，也可能误解了那句短暂出现的暗示。'}
 ];
@@ -124,9 +125,9 @@ function renderStoryArchivePage(){
  const page=state.page;if(!['story-nodes','story-endings','story-ending-detail'].includes(page))return false;
  if(page==='story-nodes'){
   const archive=rrReadArchive(),unlocked=RR_NODES.filter(n=>archive.nodes[n.id]).length;
-  const branchNode=id=>{const n=RR_NODES.find(item=>item.id===id);if(!n)return '';const available=!!archive.nodes[id];return `<div class="rr-tree-node ${available?'is-unlocked':'is-locked'}" data-node="${id}"><small>${clean(n.tag)}</small><strong>${available?clean(n.name):'？？？'}</strong><span>${available?clean(n.desc):'未抵达'}</span>${available?`<button onclick="rrAskRewind('${id}')">从这里回溯 ↗</button>`:'<span class="rr-node-lock">未解锁</span>'}</div>`};
+  const branchNode=id=>{const n=RR_NODES.find(item=>item.id===id);if(!n)return '';const available=!!archive.nodes[id];const tag=available?'button':'div';return `<${tag} class="rr-tree-node ${available?'is-unlocked':'is-locked'}" data-node="${id}" ${available?`onclick="rrAskRewind('${id}')" title="点击回溯"`:'aria-disabled="true"'}><strong>${clean(n.name)}</strong></${tag}>`};
   const lane=ids=>ids.map(branchNode).join('<div class="rr-tree-connector"></div>');
-  view.innerHTML=`<section class="rr-archive"><div class="rr-archive-scroll">${rrArchiveHeader('STORY TREE','剧情回溯',`已抵达 ${unlocked} / ${RR_NODES.length} 个节点 · 点亮走过的道路`)}<div class="rr-tree">${lane(['phone','group-reply','neighbor-reply','status-discovery','investigate'])}<div class="rr-tree-split"><div class="rr-tree-path"><div class="rr-tree-branch-tag">危险的追问</div>${lane(['group-alert','group-ending'])}</div><div class="rr-tree-path"><div class="rr-tree-branch-tag">没有公开追问</div><div class="rr-tree-mini-split"><div>${branchNode('neighbor-ask')}</div><div>${branchNode('no-ask')}</div></div>${lane(['chores','mimi','night-choice'])}<div class="rr-tree-mini-split"><div>${lane(['sleep-branch','sleep-ending'])}</div><div>${lane(['late-screen','lin-withdraw','quiet-night'])}<div class="rr-tree-mini-split"><div>${lane(['repair','first-night'])}</div><div>${lane(['late-misread','late-misread-end'])}</div></div></div></div></div></div></div><div class="rr-branch-history"><strong>曾经作出的选择</strong><div>${[['neighbor','问王雨桐'],['group','问物业群'],['none','暂时不问']].map(([id,label])=>`<span class="${archive.branches[id]?'seen':''}">${archive.branches[id]?'✓':'·'} ${label}</span>`).join('')}</div></div><p class="rr-explain">只记录确实经过的节点。回溯时恢复该节点当时的状态；已收录结局不会消失。</p><button class="rr-archive-foot" onclick="openEndingArchive()">查看结局图鉴 →</button></div></section>`;
+  view.innerHTML=`<section class="rr-archive"><div class="rr-archive-scroll">${rrArchiveHeader('STORY TREE','剧情回溯',`已抵达 ${unlocked} / ${RR_NODES.length} 个节点 · 点亮走过的道路`)}<div class="rr-tree">${lane(['phone','group-reply','neighbor-reply','status-discovery','investigate'])}<div class="rr-tree-split"><div class="rr-tree-path"><div class="rr-tree-branch-tag">危险的追问</div>${lane(['group-alert','group-ending'])}</div><div class="rr-tree-path"><div class="rr-tree-branch-tag">没有公开追问</div><div class="rr-tree-mini-split"><div>${branchNode('neighbor-ask')}</div><div>${branchNode('no-ask')}</div></div>${lane(['chores','mimi','night-choice'])}<div class="rr-tree-mini-split"><div>${lane(['sleep-branch','sleep-ending'])}</div><div>${lane(['late-screen','lin-withdraw'])}<div class="rr-tree-mini-split"><div>${lane(['quiet-night','ignored-ending'])}</div><div>${lane(['repair','repair-fixed','first-night'])}${lane(['late-misread','late-misread-end'])}</div></div></div></div></div></div></div><div class="rr-branch-history"><strong>曾经作出的选择</strong><div>${[['neighbor','问王雨桐'],['group','问物业群'],['none','暂时不问']].map(([id,label])=>`<span class="${archive.branches[id]?'seen':''}">${archive.branches[id]?'✓':'·'} ${label}</span>`).join('')}</div></div><p class="rr-explain">只记录确实经过的节点。回溯时恢复该节点当时的状态；已收录结局不会消失。</p><button class="rr-archive-foot" onclick="openEndingArchive()">查看结局图鉴 →</button></div></section>`;
   return true;
  }
  if(page==='story-endings'){

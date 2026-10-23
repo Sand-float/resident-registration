@@ -1,6 +1,6 @@
 /* Centralized audio templates; no scene code should instantiate Audio directly. */
 const SoundFX=(()=>{
- const paths=Object.freeze({message:'game/audio/message.wav',retract:'game/audio/retract.wav',clue:'game/audio/clue.wav',confirm:'game/audio/confirm.wav',anomaly:'game/audio/anomaly.wav',door:'game/audio/door.wav'});
+ const paths=Object.freeze({message:'game/audio/message.wav',retract:'game/audio/retract.wav',clue:'game/audio/clue.wav',confirm:'game/audio/confirm.wav',anomaly:'game/audio/anomaly.wav',door:'game/audio/door.wav',footsteps:'game/audio/footsteps.wav',repair:'game/audio/repair.wav',latch:'game/audio/latch.wav',open:'game/audio/open.wav'});
  const pool=new Map();let unlocked=false,last={};
  let muted=false;try{muted=localStorage.getItem('resident_sfx_muted_v1')==='1'}catch(e){}
  function warm(){unlocked=true;for(const [id,src]of Object.entries(paths)){if(pool.has(id))continue;const a=new Audio(src);a.preload='auto';a.volume=id==='message'?.40:id==='anomaly'?.45:.34;pool.set(id,a);}}

@@ -85,7 +85,7 @@ function scheduleNeighborNarrative(){
  neighborTimer=setTimeout(advanceNeighborMessage, Math.max(700,Number(state.messageSpeed)||2200));
 }
 function fictionalClock(){
- if(state.nightChoice==='browse'||state.nightChoice==='misread')return state.nightRepairStatus==='accepted'||state.nightDoorStep?'00:07':'23:46';
+ if(state.nightChoice==='browse'||state.nightChoice==='misread')return state.nightRepairStatus==='fixed'||state.nightDoorStep?'00:07':'23:46';
  if(state.dayOneMimiStep>=4)return '23:42';
  if(state.dayOneUnlocked)return '20:32';
  return '20:16';
@@ -414,7 +414,7 @@ function render(){
    return;
  }
  if(state.page==='rules'){view.innerHTML=`${header('群公告','chat')}<div class="scroll rules-scroll"><div class="doc-section"><h2 class="doc-title">${E('公告标题')}</h2><p class="doc-date">${E('公告发布信息')}</p><div class="doc-content">${E('公告正文')}</div></div></div>`;return}
- if(state.page==='property'){view.innerHTML=`${header(T('小区名称')+' · 物业服务','wechat')}<div class="scroll mini-scroll"><div class="mini-cover"><small>RESIDENTIAL SERVICE</small><h2>${E('小区名称')}</h2><p>${E('物业宣传语')}</p></div><div class="mini-pad"><div class="residence-card"><div class="tiny-title">我的房屋</div><h3>${E('主角房号')}</h3><p>${E('住户认证')}</p></div><div class="mini-card"><div class="section-title">生活服务</div><div class="mini-grid">${['住户登记','物业公告','报事报修','门禁记录'].map((t,i)=>`<button class="mini-tool" onclick="go('${['residence','rules','repairs','access'][i]}')"><span class="tool-icon">${['▤','☷','⚒','▣'][i]}</span>${t}</button>`).join('')}</div></div>${state.nightChoice==='browse'?`<div class="mini-card"><div class="section-title">报修记录</div><button class="mini-notice" onclick="go('repairs')"><b>${state.nightRepairStatus==='accepted'?'门牌标识松动 · 待维修':state.nightRepairStatus==='pending'?'工单处理中':'报事报修'}</b><small>查看 ›</small></button></div>`:''}<div class="mini-card"><div class="section-title">最新公告</div><button class="mini-notice" onclick="openAnnouncement()"><b>${E('公告标题')}</b><small>今天</small></button></div></div></div>`;return}
+ if(state.page==='property'){view.innerHTML=`${header(T('小区名称')+' · 物业服务','wechat')}<div class="scroll mini-scroll"><div class="mini-cover"><small>RESIDENTIAL SERVICE</small><h2>${E('小区名称')}</h2><p>${E('物业宣传语')}</p></div><div class="mini-pad"><div class="residence-card"><div class="tiny-title">我的房屋</div><h3>${E('主角房号')}</h3><p>${E('住户认证')}</p></div><div class="mini-card"><div class="section-title">生活服务</div><div class="mini-grid">${['住户登记','物业公告','报事报修','门禁记录'].map((t,i)=>`<button class="mini-tool" onclick="go('${['residence','rules','repairs','access'][i]}')"><span class="tool-icon">${['▤','☷','⚒','▣'][i]}</span>${t}</button>`).join('')}</div></div>${state.nightChoice==='browse'?`<div class="mini-card"><div class="section-title">报修记录</div><button class="mini-notice" onclick="go('repairs')"><b>${state.nightRepairStatus==='fixed'?'门牌标识 · 已完成维修':state.nightRepairStatus==='accepted'?'门牌标识松动 · 等待上门':state.nightRepairStatus==='pending'?'工单处理中':'报事报修'}</b><small>查看 ›</small></button></div>`:''}<div class="mini-card"><div class="section-title">最新公告</div><button class="mini-notice" onclick="openAnnouncement()"><b>${E('公告标题')}</b><small>今天</small></button></div></div></div>`;return}
  if(state.page==='repairs'){
    if(typeof renderNightRepair==='function'&&renderNightRepair())return;
    view.innerHTML=`${header('报事报修','property')}<div class="scroll native-shell"><div class="native-section-label">报事报修</div><div class="empty-state">暂无报修记录。</div></div>`;return;
@@ -582,7 +582,7 @@ function notify(s){const t=document.querySelector('#toast');t.textContent=s;t.cl
 function reset(){startNewGame()}
 document.querySelector('#phone-screen').addEventListener('click',event=>{
  const control=event.target.closest('button');
- if(!control||control.classList.contains('rr-audio-switch'))return;
+ if(!control||control.classList.contains('rr-audio-switch')||control.closest('.rr-cg-scene'))return;
  if(!document.querySelector('#phone-screen').contains(control))return;
  SoundFX.play('confirm');
 });
