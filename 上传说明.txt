@@ -1,10 +1,8 @@
-《住户登记》——不删除任何旧文件的上传方式
+住户登记 · 修复版（恢复原文及树状回溯）
 
-1. GitHub 仓库 Code → Add file → Upload files。
-2. 解压 ZIP 后，只上传 index.html 和 resident_v2 整个文件夹（拖动这两个到网页上传区）。
-3. 提交 Commit changes。
+直接将本压缩包解压后得到的 index.html 和 resident_v3 文件夹一并拖到 GitHub 仓库根目录上传，再点击 Commit changes。
+不需要删除任何旧文件。旧 resident_v2 文件夹可保留，它不会由新 index.html 加载。
 
-旧文件全部保留，不必删除；新 index.html 引用的 HTML/CSS/JS/图片/声音都在 resident_v2 下，不会调用旧脚本。
-以后更新只需覆盖这份目录的文件。
+本版修复：恢复原版未获授权的剧情文字；保留王雨桐聊天与快递通知这两项指定修改；使用 story.txt 作为线上文案来源；恢复标题页面的回溯入口；确保结局页面可以滚动看到回溯按钮；保留已走过分支和回溯存档。
 
-注意：GitHub 网页上传界面需要展示 resident_v2/... 文件路径；如果没有带上路径，不要提交。
+为避免误以为实时站点已更新，网页请提交后强制刷新 Ctrl+Shift+R。
