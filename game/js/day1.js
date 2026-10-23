@@ -40,7 +40,8 @@ function dayOnePendingFooter(){return `<div class="chat-compose d1-waiting"><spa
 function dayOneChatFooter(){
  if(!state.dayOneAsked&&state.dayOneInquiryStep===0)return dayOneInquiryOptions('group');
  if(state.dayOneInquiryStep===1)return dayOnePendingFooter();
- if(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.storyEnding)return `<div class="reply-area d1-reply-area"><div class="reply-hint">群里没有人接话。几分钟后，手机收到一条陌生通知。</div><button class="reply-option" onclick="beginNightDanger('group')">${state.nightChoice==='group'?'继续查看异样':'查看突然出现的通知'} →</button></div>`;
+ // Reply arrived: player must tap back to return to WeChat before the anonymous message appears.
+ if(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2)return '<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有更多消息"/><span>☺</span></div>';
  return `<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有更多可发送的消息"/><span>☺</span></div>`;
 }
 function dayOneNeighborFooter(){
@@ -113,7 +114,7 @@ function dayOneHomeGuide(){
  if(state.nightChoice==='browse')return typeof nightHomeHint==='function'?nightHomeHint():'';
  if(!state.dayOneBodySeen)return `<div class="d1-home-tip d1-discovery"><span>桌面发生了变化</span><strong>好像多出了一个应用……</strong><small>看看新出现的「身体状态」图标。</small></div>`;
  if(!state.dayOneAsked){if(state.dayOneChoice){const target=state.dayOneChoice==='neighbor'?'neighbor':'chat';return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>${state.dayOneInquiryStep===1?'消息已发出，等对方回复':'刚才还没把话问出口'}</strong><button onclick="go('${target}')">返回聊天 →</button></div>`;}return `<div class="d1-home-tip d1-discovery"><span>身体状态</span><strong>这些数字是怎么回事？</strong><small>点开「身体状态」，想想要不要问问谁。</small></div>`;}
- if(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.storyEnding)return `<div class="d1-home-tip d1-discovery"><span>群聊</span><strong>小林突然让你不要继续追问。</strong><button onclick="go('chat')">看看接下来的消息 →</button></div>`;
+ if(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.storyEnding)return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>${state.groupAlertShown?'有一条没有署名的消息':'刚才的群聊还没有结束'}</strong><button onclick="state.tab='微信';go('${state.groupAlertShown?'wechat':'chat'}')">打开微信 →</button></div>`;
  if(!dayOneAllDone())return `<div class="d1-home-tip d1-discovery"><span>今晚还没结束</span><strong>备忘录里还有 ${DAY1_TASKS.length-dayOneCompleted()} 项待办</strong><small>打开桌面上的「备忘录」，收拾一下吧。</small></div>`;
  if(state.dayOneMimiStep<4)return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>给米米发个消息吧</strong><button onclick="go('mimi-story')">和米米聊聊今天 →</button></div>`;
  return `<div class="d1-home-tip d1-discovery"><span>夜深了</span><strong>你可以收起手机去睡觉。</strong><button onclick="go('day1-night')">接下来做什么？ →</button></div>`;
@@ -158,7 +159,7 @@ function renderDayOnePage(){
  if(page==='mimi-story'){
   if(!state.dayOneAsked||!dayOneAllDone()){goHome();return true}
   const step=Number(state.dayOneMimiStep)||0;
-  const bubbles=[`<div class="day-divide">昨天</div>`,...directEntries('米米').map(m=>msg(m.speaker,m.body,'friend',m.mine)),`<div class="day-divide">今天 ${fictionalClock()}</div>`,msg('米米',T('Day1闺蜜开场1'),'friend'),msg('米米',T('Day1闺蜜开场2'),'friend')];
+  const bubbles=[`<div class="day-divide">昨天</div>`,...directEntries('米米').map(m=>msg(m.speaker,m.body,'friend',m.mine)),`<div class="day-divide">今天 ${state.mimiChatClock||'20:48'}</div>`,msg('米米',T('Day1闺蜜开场1'),'friend'),msg('米米',T('Day1闺蜜开场2'),'friend')];
   if(step>=1)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),'renter',true));
   if(step>=2)bubbles.push(msg('米米',T('Day1闺蜜回应'+(state.dayOneMimiChoice||1)),'friend'));
   if(step>=3)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家晚安')||'好呀，晚安～','renter',true));

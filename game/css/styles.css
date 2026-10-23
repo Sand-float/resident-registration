@@ -678,3 +678,8 @@ body[data-theme="light"]{--rr-accent:#ae879a;--rr-accent-ink:#fff}
 .phone-screen.rr-app-blink:after{content:'';position:absolute;inset:0;background:#fff8;pointer-events:none;z-index:35;animation:rrAppFlash .76s ease-out both;}
 @keyframes rrAppFlash{0%,22%,47%,70%,100%{opacity:0}10%,34%,58%{opacity:.7}}
 .rr-speed-hint{font-size:10px!important;color:#aaa;text-align:center;max-width:90%;margin:12px auto 0;line-height:1.5;}
+
+/* 微信消息首页：匿名私信的进入提示，不叠加任何弹窗选项。 */
+.rr-anon-action{padding:16px 15px;background:var(--card,#fff);border-top:1px solid var(--border,#e6e6e6)}
+.rr-anon-action button{background:#eee8eb;color:#51444c;border:1px solid #d7cad2;border-radius:9px;width:100%;min-height:47px;padding:12px 15px;text-align:left;display:flex;justify-content:space-between;align-items:center;font-size:14px}
+body[data-theme=dark] .rr-anon-action{background:#24262d}body[data-theme=dark] .rr-anon-action button{background:#403a45;color:#eee4e9;border-color:#655463}

@@ -20,6 +20,7 @@ function nightRecordEvidence(id){
  state.clues=(Number(state.clues)||0)+1;
  if(typeof SoundFX!=='undefined')SoundFX.play('clue');
  store();
+ if(typeof notify==='function')notify('获得线索：'+NIGHT_EVIDENCE[id].title);
 }
 function nightInvestigationEntries(){
  const found=[];
@@ -62,7 +63,7 @@ function nightRepairProcess(){
 function scheduleNightEvents(){
  if(state.storyEnding||state.nightChoice!=='browse'){nightCancelTimers();return}
  if(state.nightPhase==='waiting')nightSchedule('issue',Number(state.nightStep)||Date.now()+2100,nightNoticeArrives);
- if(state.nightLinMessage===1&&state.nightLinOpenedAt)nightSchedule('retract',Number(state.nightLinOpenedAt)+3100,nightRetractMessage);
+ if(state.nightLinMessage===1&&state.nightLinOpenedAt)nightSchedule('retract',Number(state.nightLinOpenedAt)+11500,nightRetractMessage);
  if(state.nightLinAsk===1&&state.nightLinAskAt)nightSchedule('reply',Number(state.nightLinAskAt)+Math.max(1500,Number(state.messageSpeed)||2200),nightLinReply);
  if(state.nightRepairStatus==='pending'&&state.nightRepairAt)nightSchedule('repair',Number(state.nightRepairAt)+2300,nightRepairProcess);
 }
@@ -75,7 +76,7 @@ function nightOnNavigate(page){
 function nightLinChatFooter(){
  if(state.nightChoice!=='browse'||state.dmPerson!=='小林')return '<div class="chat-compose dm-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>';
  if(state.nightLinMessage<2)return '<div class="chat-compose dm-compose"><span>⊕</span><input disabled placeholder="没有可以发送的消息"/><span>☺</span></div>';
- if(state.nightLinAsk===0)return `<div class="reply-area d1-reply-area"><div class="reply-hint">小林撤回了一条消息。</div><button class="reply-option" onclick="nightAskLin(true)">你是真的不知道，还是不方便告诉我？</button><button class="reply-option" onclick="nightAskLin(false)">不问，收起聊天</button></div>`;
+ if(state.nightLinAsk===0)return `<div class="reply-area d1-reply-area"><div class="reply-hint">小林撤回了一条消息。</div><button class="reply-option" onclick="nightAskLin(true)">小林，刚才那句话是什么意思？</button><button class="reply-option" onclick="nightAskLin(false)">不问，收起聊天</button></div>`;
  if(state.nightLinAsk===1)return '<div class="chat-compose dm-compose"><span>⊕</span><input disabled placeholder="消息已发送…"/><span>☺</span></div>';
  return '<div class="chat-compose dm-compose"><span>⊕</span><input disabled placeholder="暂时没有更多消息"/><span>☺</span></div>';
 }
@@ -83,7 +84,7 @@ function nightAskLin(ask){
  if(state.nightChoice!=='browse'||state.nightLinMessage!==2||state.nightLinAsk!==0)return;
  state.nightLinAsk=ask?1:3;
  if(ask)state.nightLinAskAt=Date.now();
- if(!ask){store();go('wechat');}else{store();render();scheduleNightEvents();}
+ if(!ask){state.tab='微信';store();go('wechat');}else{store();render();scheduleNightEvents();}
 }
 function nightHomeHint(){
  if(state.nightLinMessage===0)return `<div class="d1-home-tip d1-discovery"><span>深夜 · ${fictionalClock()}</span><strong>手机屏幕一直亮着</strong><small>再看看微信里有没有新消息。</small></div>`;
@@ -99,6 +100,7 @@ function nightQuietEnding(){
 function nightStartBrowse(){
  if(!dayOneAllDone()||state.dayOneMimiStep<4)return;
  if(!state.nightChoice){
+  state.gameClockMinute=Math.max(Number(state.gameClockMinute)||1216,23*60+12);
   state.nightChoice='browse';state.nightPhase='waiting';state.nightStep=Date.now()+2300;
   state.nightLinMessage=0;state.nightLinOpenedAt=0;state.nightLinAsk=0;
   state.nightRepairStatus='';state.nightDoorStep=0;state.nightPlateChecked=false;state.nightRepairCategory='';
@@ -143,7 +145,7 @@ function nightContinueDoor(){
  if(state.nightChoice!=='browse'||!['accepted','fixed'].includes(state.nightRepairStatus))return;
  state.nightDoorStep=Math.min(4,Number(state.nightDoorStep||1)+1);
  if(state.nightDoorStep===3){state.nightRepairStatus='fixed';nightRecordEvidence('hallway');}
- if(state.nightDoorStep>=4){if(state.nightRepairStatus!=='fixed')return;state.page='night-after-repair';store();render();return}
+ if(state.nightDoorStep>=4){if(state.nightRepairStatus!=='fixed')return;if(typeof SoundFX!=='undefined')SoundFX.stop();state.page='night-after-repair';store();render();return}
  store();nightSceneSound('repair',state.nightDoorStep);render();
 }
 function nightBody(title,content,actions,eyebrow='锦苑花庭'){
@@ -152,7 +154,7 @@ function nightBody(title,content,actions,eyebrow='锦苑花庭'){
 function beginNightDanger(kind){
  if(!['group','sleep'].includes(kind))return;
  if(kind==='sleep'&&(!dayOneAllDone()||state.dayOneMimiStep<4))return;
- if(kind==='group'&&!(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2))return;
+ if(kind==='group'&&!(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&state.groupAlertShown))return;
  state.nightChoice=kind;state.nightStep=0;state.nightAlertRead=false;store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightAdvanceDanger(){
@@ -163,7 +165,7 @@ function nightAdvanceDanger(){
 }
 function nightSetEnding(id){
  if(state.storyEnding)return;
- nightCancelTimers();state.storyEnding=id;state.nightStep=4;state.dayOneFinished=true;
+ nightCancelTimers();if(typeof SoundFX!=='undefined')SoundFX.stop();state.storyEnding=id;state.nightStep=4;state.dayOneFinished=true;
  state.page=id==='day1-survivor'?'day-end':'night-ending';state.navStack=[];
  store();if(typeof rrSaveEnding==='function')rrSaveEnding(id);render();
 }
