@@ -6,9 +6,8 @@ const NIGHT_EVIDENCE={
  lin:{source:'微信 · 小林',title:'不合时宜的提醒',text:'小林深夜忽然提到楼层标识和报修记录，随即撤回。他为什么突然说这个？'},
  retract:{source:'微信 · 小林',title:'主动撤回',text:'我亲眼看见小林将一条重要私信撤回；微信列表也同步变成「撤回了一条消息」。'},
  repair:{source:'物业服务 · 报事报修',title:'门牌报修单',text:'302 门牌只剩一颗螺丝固定，其余三个固定点已经松脱。我提交了门牌维修工单。'},
- hallway:{source:'房门 · 深夜',title:'被略过的房间',text:'维修完成后，门外又有脚步声经过，最后没有停在 302 门前。'},
  oldticket:{source:'物业服务 · 历史工单',title:'短暂出现的历史工单',text:'物业服务中闪过一张更早的 302 室工单，联系人姓林。重新打开后却找不到了。'},
- access:{source:'物业服务 · 门禁记录',title:'异常门禁记录',text:'昨日深夜，302 室对应的门禁记录里出现一条来自未登记设备的进入信息。'},
+ access:{source:'物业服务 · 门禁记录',title:'异常门禁记录',text:'门禁记录显示，昨日深夜三栋有一次「未识别进入」，来源标注为未登记设备。'},
  body:{source:'手机桌面',title:'自行出现的应用',text:'手机桌面多出了「身体状态」，里面却已填好个人房号和身体数据。'},
  archive:{source:'物业服务 · 历史记录',title:'有意被隐藏的记录',text:'302 室一张旧工单一闪而过。它没有出现在可查询的工单列表里。'}
 };
@@ -22,7 +21,9 @@ function nightRecordEvidence(id){
  store();
  if(typeof notify==='function')notify('获得线索：'+NIGHT_EVIDENCE[id].title);
 }
+function rrMigrateRemovedEvidence(){if(state.investigation?.hallway){delete state.investigation.hallway;store()}}
 function nightInvestigationEntries(){
+ rrMigrateRemovedEvidence();
  const found=[];
  if(state.checked||state.seenAnnouncement){if(state.checked)found.push(NIGHT_EVIDENCE.group);if(state.seenAnnouncement)found.push(NIGHT_EVIDENCE.notice)}
  for(const [id,e] of Object.entries(NIGHT_EVIDENCE)){if(!['group','notice'].includes(id)&&state.investigation?.[id])found.push(e)}
@@ -144,7 +145,7 @@ function nightStartDoorScene(){
 function nightContinueDoor(){
  if(state.nightChoice!=='browse'||!['accepted','fixed'].includes(state.nightRepairStatus))return;
  state.nightDoorStep=Math.min(4,Number(state.nightDoorStep||1)+1);
- if(state.nightDoorStep===3){state.nightRepairStatus='fixed';nightRecordEvidence('hallway');}
+ if(state.nightDoorStep===3){state.nightRepairStatus='fixed';}
  if(state.nightDoorStep>=4){if(state.nightRepairStatus!=='fixed')return;if(typeof SoundFX!=='undefined')SoundFX.stop();state.page='night-after-repair';store();render();return}
  store();nightSceneSound('repair',state.nightDoorStep);render();
 }
@@ -154,7 +155,7 @@ function nightBody(title,content,actions,eyebrow='锦苑花庭'){
 function beginNightDanger(kind){
  if(!['group','sleep'].includes(kind))return;
  if(kind==='sleep'&&(!dayOneAllDone()||state.dayOneMimiStep<4))return;
- if(kind==='group'&&!(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&state.groupAlertShown))return;
+ if(kind==='group'&&!(state.page==='anonymous-chat'&&state.anonStage>=3&&state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&state.groupAlertShown))return;
  state.nightChoice=kind;state.nightStep=0;state.nightAlertRead=false;store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightAdvanceDanger(){
@@ -177,7 +178,7 @@ function nightSceneSound(route,step){
 }
 function rrCG(which,caption,lines,button,label,anim='still'){
  const name={loose:'plate_loose',closed:'foyer_closed',ajar:'foyer_ajar'}[which]||'foyer_closed';
- return `<section class="rr-cg-scene"><div class="rr-cg-visual ${clean(anim)}"><img src="game/assets/${name}.webp" alt="${clean(caption)}"></div><div class="rr-cg-vignette"></div><div class="rr-cg-panel"><small>${clean(caption)}</small><p>${lines}</p><button class="rr-cg-next" onclick="${button}">${clean(label)} <span>›</span></button></div></section>`;
+ return `<section class="rr-cg-scene"><div class="rr-cg-visual ${clean(anim)}"><img src="game/assets/${name}.webp" alt="${clean(caption)}" loading="eager" decoding="sync" fetchpriority="high"></div><div class="rr-cg-vignette"></div><div class="rr-cg-panel"><small>${clean(caption)}</small><p>${lines}</p><button class="rr-cg-next" onclick="${button}">${clean(label)} <span>›</span></button></div></section>`;
 }
 function renderNightPage(){
  if(state.page==='night-plate'){

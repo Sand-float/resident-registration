@@ -683,3 +683,11 @@ body[data-theme="light"]{--rr-accent:#ae879a;--rr-accent-ink:#fff}
 .rr-anon-action{padding:16px 15px;background:var(--card,#fff);border-top:1px solid var(--border,#e6e6e6)}
 .rr-anon-action button{background:#eee8eb;color:#51444c;border:1px solid #d7cad2;border-radius:9px;width:100%;min-height:47px;padding:12px 15px;text-align:left;display:flex;justify-content:space-between;align-items:center;font-size:14px}
 body[data-theme=dark] .rr-anon-action{background:#24262d}body[data-theme=dark] .rr-anon-action button{background:#403a45;color:#eee4e9;border-color:#655463}
+
+/* v6: private anonymous-message scene; centered action only after timed messages. */
+.rr-anon-chat{position:relative}
+.rr-anon-center{position:absolute;z-index:5;left:9%;right:9%;top:47%;transform:translateY(-50%);pointer-events:auto}
+.rr-anon-center button{width:100%;min-height:51px;background:#ebe2e7;color:#3d3540;border:1px solid #c6b2bd;border-radius:11px;text-align:center;font-size:14px;font-weight:550;box-shadow:0 5px 20px #0002}
+.rr-anon-center button span{padding-left:10px}
+.rr-anon-locked .back-btn{opacity:.22;pointer-events:none}
+body[data-theme="dark"] .rr-anon-center button{background:#49414a;color:#f7ecf3;border-color:#796878}
