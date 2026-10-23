@@ -1,5 +1,5 @@
 const view=document.querySelector('#view'), overlay=document.querySelector('#overlay-root');
-const defaultState={page:'intro',day:1,stage:0,checked:false,reply:false,replyChoice:0,stress:8,trust:70,clues:0,tab:'微信',playerId:'',avatar:0,profileDraft:'',theme:'dark',navStack:[],messageSpeed:2200,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneSlept:false,stamina:82,satiety:58,mood:72};
+const defaultState={page:'intro',day:1,stage:0,checked:false,reply:false,replyChoice:0,stress:8,trust:70,clues:0,tab:'微信',playerId:'',avatar:0,profileDraft:'',theme:'dark',navStack:[],messageSpeed:2200,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneInquiryStep:0,dayOneInquiryTextChoice:0,dayOneInquirySentAt:0,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneMimiSentAt:0,dayOneFlowRevision:2,dayOneSlept:false,stamina:82,satiety:58,mood:72};
 let storedState={};
 try{storedState=JSON.parse(localStorage.getItem('resident_register_v1')||'{}')||{}}catch(e){}
 const state={...defaultState,...storedState,page:'intro',navStack:[],phoneActivated:false,playerId:'',avatar:0,profileDraft:''};
@@ -201,7 +201,7 @@ function openDirect(encoded){
  const raw=decodeURIComponent(encoded);const person=getPerson(raw);
  if(!person.friend){notify('你们还不是微信好友');return}
  state.dmPerson=person.key;
- if(person.key==='王雨桐')go('neighbor');else if(person.key==='米米'&&state.dayOneAsked&&!state.dayOneSlept)go('mimi-story');else go('direct-chat');
+ if(person.key==='王雨桐')go('neighbor');else if(person.key==='米米'&&state.dayOneAsked&&typeof dayOneAllDone==='function'&&dayOneAllDone())go('mimi-story');else go('direct-chat');
 }
 function openPersonMoments(){
  if(!getPerson(state.person).friend){notify('仅好友可查看朋友圈');return}
@@ -224,9 +224,9 @@ function groupEntries(){
  for(let i=2;i<=Math.min(7,state.stage);i++)a.push({speaker:T('群聊'+i+'发言人'),body:T('群聊'+i+'正文')});
  if(state.replyChoice&&state.replyChoice!==3)a.push({speaker:'我',body:T('玩家回复'+state.replyChoice),mine:true});
  if(state.groupReactionReady&&[1,2].includes(state.replyChoice))a.push({speaker:T('群聊回复反馈'+state.replyChoice+'发言人'),body:T('群聊回复反馈'+state.replyChoice+'正文')});
- if(state.dayOneAsked&&state.dayOneChoice==='group'){
-  a.push({speaker:'我',body:T('Day1问物业正文'),mine:true});
-  a.push({speaker:'物业管家-小林',body:T('Day1物业回应')});
+ if(state.dayOneChoice==='group' && state.dayOneInquiryStep>=1){
+  a.push({speaker:'我',body:dayOneInquiryText('group',state.dayOneInquiryTextChoice),mine:true});
+  if(state.dayOneInquiryStep>=2)a.push({speaker:'物业管家-小林',body:dayOneInquiryResponse('group',state.dayOneInquiryTextChoice)});
  }
  return a.filter(m=>m.body);
 }
@@ -242,17 +242,19 @@ function neighborEntries(){
  if(state.yutongStage>=3)a.push({speaker:'我',body:T('王雨桐回复'+(state.yutongReply||1)),mine:true});
  if(state.yutongStage>=4)a.push({speaker:'王雨桐',body:T('王雨桐回应'+(state.yutongReply||1)+'第一条')||T('王雨桐后续消息1')});
  if(state.yutongStage>=5)a.push({speaker:'王雨桐',body:T('王雨桐回应'+(state.yutongReply||1)+'第二条')||T('王雨桐后续消息2')});
- if(state.dayOneAsked&&state.dayOneChoice==='neighbor'){
-  a.push({speaker:'我',body:T('Day1问邻居正文'),mine:true});
-  a.push({speaker:'王雨桐',body:T('Day1邻居回应')});
+ if(state.dayOneChoice==='neighbor' && state.dayOneInquiryStep>=1){
+  a.push({speaker:'我',body:dayOneInquiryText('neighbor',state.dayOneInquiryTextChoice),mine:true});
+  if(state.dayOneInquiryStep>=2)a.push({speaker:'王雨桐',body:dayOneInquiryResponse('neighbor',state.dayOneInquiryTextChoice)});
  }
  return a.filter(m=>m.body);
 }
 function mimiEntries(){
  if(!state.dayOneAsked||!dayOneAllDone())return directEntries('米米');
  const a=[{speaker:'米米',body:T('Day1闺蜜开场1')},{speaker:'米米',body:T('Day1闺蜜开场2')}];
- if(state.dayOneMimiStep>=1){a.push({speaker:'我',body:T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),mine:true});a.push({speaker:'米米',body:T('Day1闺蜜回应'+(state.dayOneMimiChoice||1))})}
- if(state.dayOneMimiStep>=2){a.push({speaker:'我',body:T('Day1闺蜜玩家晚安')||'好呀，晚安～',mine:true});a.push({speaker:'米米',body:T('Day1闺蜜收尾')})}
+ if(state.dayOneMimiStep>=1)a.push({speaker:'我',body:T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),mine:true});
+ if(state.dayOneMimiStep>=2)a.push({speaker:'米米',body:T('Day1闺蜜回应'+(state.dayOneMimiChoice||1))});
+ if(state.dayOneMimiStep>=3)a.push({speaker:'我',body:T('Day1闺蜜玩家晚安')||'好呀，晚安～',mine:true});
+ if(state.dayOneMimiStep>=4)a.push({speaker:'米米',body:T('Day1闺蜜收尾')});
  return a.filter(m=>m.body);
 }
 function formatPreview(entries,withName=false){
@@ -291,6 +293,7 @@ function visibleMoments(){
 function render(){
  const priorRulesScroll=state.page==='rules'?document.querySelector('.rules-scroll')?.scrollTop:null;
  if(typeof dayOneSync==='function')dayOneSync();
+ if(typeof scheduleDayOneConversationReplies==='function')scheduleDayOneConversationReplies();
  document.body.dataset.theme=state.theme;document.body.dataset.page=state.page;
  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.theme==='dark'?'#24252b':'#f6f6f6');
  if(priorRulesScroll!==null&&priorRulesScroll!==undefined)queueMicrotask(()=>{const pane=document.querySelector('.rules-scroll');if(pane)pane.scrollTop=priorRulesScroll});
@@ -303,7 +306,7 @@ function render(){
  if(state.page==='profile'){view.innerHTML=`<div class="profile-screen"><div class="profile-content"><span class="profile-kicker">WELCOME, NEW RESIDENT</span><h1>建立住户档案</h1><p class="profile-desc">请先为自己选择头像和 ID。<br>这份资料会出现在你的模拟手机中。</p><p class="profile-label">选择头像</p><div class="avatar-choices">${[1,2,3].map(i=>`<button type="button" class="avatar-choice ${state.avatar===i?'selected':''}" aria-pressed="${state.avatar===i}" onclick="chooseAvatar(${i})">${avatarMark(i)}<b>头像 ${i}</b><small>待细化</small></button>`).join('')}</div><label for="profile-id" class="profile-label">设置 ID</label><div class="profile-field"><input id="profile-id" type="text" autocomplete="off" inputmode="text" spellcheck="false" placeholder="输入 1–4 个汉字" value="${clean(state.profileDraft)}" oninput="updateProfile()" oncompositionend="updateProfile()" aria-describedby="profile-tip" maxlength="8"><span id="profile-count" class="count">${Array.from(state.profileDraft).length}/4</span></div><div id="profile-tip" class="profile-tip">支持简体、繁体，最多 4 个汉字。</div><button id="profile-continue" class="profile-continue" onclick="confirmProfile()" disabled>确认并开始入住 →</button><div class="profile-footnote">头像为临时占位设计，后续可以替换。</div></div></div>`;validateProfile();return}
  if(state.page==='chapter'){view.innerHTML=`<div class="cover-game chapter"><div class="cover-supra">CHAPTER ${String(state.day).padStart(2,'0')}</div><h1>Day ${state.day}</h1><div class="chapter-rule"></div><div class="day-date">${E('Day1日期')}</div><button class="chapter-continue" onclick="go('scene')">点击继续 <span>↗</span></button></div>`;return}
  if(state.page==='scene'){view.innerHTML=`<div class="cover-game scene"><div class="scene-top"><small>${E('Day1开场时间')}</small><h2>${E('Day1开场标题')}</h2><p>${L('Day1开场正文')}</p></div><button class="phone-view-cta" onclick="beginPhoneExperience()">查看手机 <span>→</span></button></div>`;return}
- if(state.page==='home'){view.innerHTML=`<div class="screen home-screen"><div class="home-orb"></div><div class="home-content"><div class="home-kicker"><span class="home-kicker-dot"></span>${E('小区名称')} · 302</div><div class="home-clock">20:16</div><div class="home-date">${E('Day1日期').split(' · ')[0]} · Day ${state.day}</div><div class="home-apps-label"><span>应用</span><span class="home-apps-stroke"></span></div><div class="apps-grid">${['微信','相册','电话','短信','备忘录','物业服务','设置',...(state.dayOneUnlocked?['身体状态']:[])].map(a=>`<button class="app-launch" onclick="openApp('${a}')"><div class="app-icon ${a==='微信'?'wechat':a==='相册'?'gallery':a==='电话'?'phoneicon':a==='短信'?'smsicon':a==='备忘录'?'notesicon':a==='物业服务'?'property':'settings'}"><img class="app-image" src="${APP_DESKTOP_ICONS[a]}" alt="" aria-hidden="true">${a==='微信'&&totalWechatUnread()>0?`<span class=\"app-dot\">${totalWechatUnread()>99?'99+':totalWechatUnread()}</span>`:''}</div><span class="app-label">${a}</span></button>`).join('')}</div>${state.dayOneUnlocked?dayOneHomeGuide():''}</div></div>`;return}
+ if(state.page==='home'){view.innerHTML=`<div class="screen home-screen"><div class="home-orb"></div><div class="home-content"><div class="home-kicker"><span class="home-kicker-dot"></span>晚间 · Day ${state.day}</div><div class="home-clock">20:16</div><div class="home-date">${E('Day1日期').split(' · ')[0]} · Day ${state.day}</div><div class="home-apps-label"><span>应用</span><span class="home-apps-stroke"></span></div><div class="apps-grid">${['微信','相册','电话','短信','备忘录','物业服务','设置',...(state.dayOneUnlocked?['身体状态']:[])].map(a=>`<button class="app-launch" onclick="openApp('${a}')"><div class="app-icon ${a==='微信'?'wechat':a==='相册'?'gallery':a==='电话'?'phoneicon':a==='短信'?'smsicon':a==='备忘录'?'notesicon':a==='物业服务'?'property':'settings'}"><img class="app-image" src="${APP_DESKTOP_ICONS[a]}" alt="" aria-hidden="true">${a==='微信'&&totalWechatUnread()>0?`<span class=\"app-dot\">${totalWechatUnread()>99?'99+':totalWechatUnread()}</span>`:''}</div><span class="app-label">${a}</span></button>`).join('')}</div>${state.dayOneUnlocked?dayOneHomeGuide():''}</div></div>`;return}
  if(state.page==='wechat'){
    const chats=wechatRows();
    view.innerHTML=`<div class="screen"><div class="page-head wechat-head"><button class="icon-btn" onclick="goHome()" aria-label="返回桌面">‹</button><h2>微信</h2><button class="icon-btn" onclick="notify('此功能将在正式版本中开放')">⊕</button></div><div class="scroll"><div class="search-bar">⌕ 搜索</div>${state.tab==='微信'?`<div class="list-group">${chats.map(x=>`<button class="chat-item" onclick="openWechatRow('${x.key}')"><div class="chat-avatar-wrap">${wechatRowAvatar(x.key)}</div><div class="chat-meta"><div class="chat-meta-top"><div class="chat-title">${clean(x.label)}</div><div class="chat-time">${clean(x.time)}</div></div><div class="chat-meta-bottom"><div class="chat-snippet">${clean(x.snippet)}</div>${x.unread>0?`<span class="chat-unread badge-on-row">${x.unread>99?'99+':x.unread}</span>`:''}</div></div></button>`).join('')}</div>`:state.tab==='通讯录'?`<div class="list-group">${T('通讯录名单').split('\n').filter(Boolean).map(n=>`<button class="contact-row" onclick="openPerson('${encodeURIComponent(n)}')">${personAvatar(n)}<span>${clean(n)}</span><span style="margin-left:auto;color:#aaa">›</span></button>`).join('')}</div>`:state.tab==='发现'?`<button class="menu-row" onclick="go('moments')">◉　朋友圈　 ›</button><button class="menu-row" onclick="go('property')">⌂　${E('小区名称')}·物业服务　 ›</button>`:`<div class="me-card">${personAvatar('我','lg')}<div><h2>${clean(state.playerId||'新住户')}</h2><p>微信号：resident_302</p></div></div><button class="menu-row" onclick="go('notes')">我的收藏　 ›</button>`}</div><div class="bottom-tabs">${['微信','通讯录','发现','我'].map(t=>`<button class="tab ${state.tab===t?'active':''}" onclick="state.tab='${t}';render()"><span class="tab-icon">${navTabIcon(t)}</span><span>${t}</span></button>`).join('')}</div></div>`;
@@ -331,7 +334,7 @@ function render(){
      n>=6&&!state.checked?`<div class="reply-area"><div class="reply-hint">${E('查看成员操作提示')}</div><button class="reply-option" onclick="go('members')">查看群成员 →</button></div>`:
      n>=7&&!state.reply?`<div class="reply-area"><div class="reply-hint">选择回复，或暂不回复</div><button class="reply-option" onclick="reply(1)">${E('玩家回复1')}</button><button class="reply-option" onclick="reply(2)">${E('玩家回复2')}</button><button class="reply-option" onclick="finishGroup()">先不回复 →</button></div>`:
      `<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>`;
-   view.innerHTML=`<div class="screen chat-screen"><header class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2 style="font-size:15px">${E('业主群名称')} <small>(${groupCount()})</small></h2></div><button class="icon-btn" onclick="go('members')">⋯</button></header>${state.seenAnnouncement?`<button class="chat-pinned" onclick="openAnnouncement()">📌 群公告：${E('公告标题')}　›</button>`:''}<div class="scroll" id="chat-scroll"><div class="chat-messages"><div class="day-divide">20:16</div>${chatParts.join('')}</div></div>${state.dayOneAsked&&state.dayOneChoice==='group'?`<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有更多可发送的消息"/><span>☺</span></div>`:action}</div>`;
+   view.innerHTML=`<div class="screen chat-screen"><header class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2 style="font-size:15px">${E('业主群名称')} <small>(${groupCount()})</small></h2></div><button class="icon-btn" onclick="go('members')">⋯</button></header>${state.seenAnnouncement?`<button class="chat-pinned" onclick="openAnnouncement()">📌 群公告：${E('公告标题')}　›</button>`:''}<div class="scroll" id="chat-scroll"><div class="chat-messages"><div class="day-divide">20:16</div>${chatParts.join('')}</div></div>${state.dayOneChoice==='group'?dayOneChatFooter():action}</div>`;
    document.querySelector('#chat-scroll').scrollTop=9999;
    return;
  }
@@ -340,10 +343,10 @@ function render(){
    const allNeighbor=neighborEntries();
    for(let i=0;i<allNeighbor.length;i++){
      if(i===4)parts.push(`<div class="day-divide">今天 20:20</div>`);
-     if(i===Math.min(5,allNeighbor.length-1) && state.dayOneAsked && state.dayOneChoice==='neighbor' && i===allNeighbor.length-2)parts.push(`<div class="day-divide">今天 20:44</div>`);
+     if(i===allNeighbor.length-(state.dayOneInquiryStep>=2?2:1) && state.dayOneChoice==='neighbor' && state.dayOneInquiryStep>=1)parts.push(`<div class="day-divide">今天 20:44</div>`);
      parts.push(msg(allNeighbor[i].speaker,allNeighbor[i].body,'friend',!!allNeighbor[i].mine));
    }
-   view.innerHTML=`<div class="screen chat-screen"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>王雨桐</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('王雨桐')}')">⋯</button></div><div class="scroll" id="neighbor-scroll"><div class="chat-messages">${parts.join('')}</div></div>${state.yutongStage===2?`<div class="reply-area">${[1,2,3].map(i=>`<button class="reply-option" onclick="replyNeighbor(${i})">${E('王雨桐回复'+i)}</button>`).join('')}</div>`:`<div class="chat-compose"><span>⊕</span><input disabled placeholder="暂时无法继续发送消息"/><span>☺</span></div>`}</div>`;
+   view.innerHTML=`<div class="screen chat-screen"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>王雨桐</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('王雨桐')}')">⋯</button></div><div class="scroll" id="neighbor-scroll"><div class="chat-messages">${parts.join('')}</div></div>${state.yutongStage===2?`<div class="reply-area">${[1,2,3].map(i=>`<button class="reply-option" onclick="replyNeighbor(${i})">${E('王雨桐回复'+i)}</button>`).join('')}</div>`:state.dayOneChoice==='neighbor'?dayOneNeighborFooter():`<div class="chat-compose"><span>⊕</span><input disabled placeholder="暂时无法继续发送消息"/><span>☺</span></div>`}</div>`;
    document.querySelector('#neighbor-scroll').scrollTop=9999;return;
  }
  if(state.page==='members'){
@@ -465,6 +468,7 @@ function continueGame(){
  cancelNarrative();clearTimeout(bannerTimer);document.getElementById('incoming-banner')?.remove();closeSavePrompt();
  const dest=['intro','warning','profile'].includes(snapshot.page)?'home':snapshot.page;
  Object.assign(state,defaultState,snapshot,{page:dest,navStack:Array.isArray(snapshot.navStack)?snapshot.navStack.slice(-30):[],theme:state.theme,profileDraft:'',phoneActivated:!!snapshot.phoneActivated});
+ if(typeof migrateDayOneConversationSave==='function')migrateDayOneConversationSave(snapshot);
  if(!state.phoneActivated && !['chapter','scene'].includes(dest)){state.page='scene'}
  if(state.stage===0&&state.phoneActivated)state.phoneStartAt=Date.now();
  store();render();scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction();
@@ -474,7 +478,7 @@ function beginPhoneExperience(){
  clearTimeout(bannerTimer);
  const oldBanner=document.getElementById('incoming-banner');
  if(oldBanner)oldBanner.remove();
- Object.assign(state,{phoneActivated:true,phoneStartAt:Date.now(),stage:0,checked:false,reply:false,replyChoice:0,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,clues:0,stress:8,trust:70,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneSlept:false,stamina:82,satiety:58,mood:72});
+ Object.assign(state,{phoneActivated:true,phoneStartAt:Date.now(),stage:0,checked:false,reply:false,replyChoice:0,seenAnnouncement:false,yutongStage:0,groupReadStage:0,neighborReadStage:0,groupReactionReady:false,groupReactionPending:false,groupReactionRead:false,clues:0,stress:8,trust:70,dayOneUnlocked:false,dayOneBodySeen:false,dayOneTasks:{},dayOneChoice:null,dayOneAsked:false,dayOneInquiryStep:0,dayOneInquiryTextChoice:0,dayOneInquirySentAt:0,dayOneMimiStep:0,dayOneMimiChoice:0,dayOneMimiSentAt:0,dayOneFlowRevision:2,dayOneSlept:false,stamina:82,satiety:58,mood:72});
  store();
  go('home');
 }

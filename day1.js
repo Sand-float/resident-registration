@@ -8,6 +8,91 @@ const DAY1_TASKS=[
  {id:'food',title:'简单吃点东西',hint:'忙了一天，先垫垫肚子',image:'assets/meal.svg',action:'开始用餐',cost:'饱腹感 +25',costClass:'plus',changes:{stamina:5,satiety:25,mood:3}}
 ];
 APP_DESKTOP_ICONS['身体状态']='assets/status.svg';
+
+// Dialogue phases live in the save, so returning to chat or refreshing never
+// fabricates the player's words or silently completes an unasked question.
+let dayOneInquiryTimer=null, dayOneMimiTimer=null;
+function dayOneReplyDelay(){return Math.max(1350,Number(state.messageSpeed)||2200)}
+function migrateDayOneConversationSave(snapshot){
+ if(snapshot.dayOneFlowRevision===2)return;
+ const anyTask=Object.values(state.dayOneTasks||{}).some(Boolean);
+ if(state.dayOneChoice==='neighbor'||state.dayOneChoice==='group'){
+  // Reopen the inquiry if the old release auto-completed it before any chores.
+  if(!anyTask&&!state.dayOneSlept){state.dayOneAsked=false;state.dayOneInquiryStep=0;state.dayOneInquiryTextChoice=0;}
+  else{state.dayOneInquiryStep=2;state.dayOneAsked=true;state.dayOneInquiryTextChoice=1;}
+ }else if(state.dayOneChoice==='none'){state.dayOneAsked=true;state.dayOneInquiryStep=2;}
+ if(state.dayOneMimiStep>=1&&!state.dayOneSlept){state.dayOneMimiStep=0;state.dayOneMimiChoice=0;}
+ else if(state.dayOneMimiStep>=2){state.dayOneMimiStep=4;}
+ state.dayOneInquirySentAt=0;state.dayOneMimiSentAt=0;state.dayOneFlowRevision=2;
+}
+function dayOneInquiryText(kind,choice){
+ const k=kind==='neighbor'?'Day1问邻居':'Day1问物业';
+ return T(k+(choice===2?'备选':'')+'正文')||T(k+'正文');
+}
+function dayOneInquiryResponse(kind,choice){
+ const k=kind==='neighbor'?'Day1邻居回应':'Day1物业回应';
+ return T(k+(choice===2?'2':'1'))||T(k);
+}
+function dayOneInquiryOptions(kind){
+ return `<div class="reply-area d1-reply-area"><div class="reply-hint">你想怎么开口？</div>${[1,2].map(i=>`<button class="reply-option" onclick="sendDayOneInquiry(${i})">${clean(dayOneInquiryText(kind,i))}</button>`).join('')}</div>`;
+}
+function dayOnePendingFooter(){return `<div class="chat-compose d1-waiting"><span>⊕</span><input disabled placeholder="消息已发送，等待回复…"/><span>☺</span></div>`;}
+function dayOneChatFooter(){
+ if(!state.dayOneAsked&&state.dayOneInquiryStep===0)return dayOneInquiryOptions('group');
+ if(state.dayOneInquiryStep===1)return dayOnePendingFooter();
+ return `<div class="chat-compose"><span>⊕</span><input disabled placeholder="当前没有更多可发送的消息"/><span>☺</span></div>`;
+}
+function dayOneNeighborFooter(){
+ if(!state.dayOneAsked&&state.dayOneInquiryStep===0)return dayOneInquiryOptions('neighbor');
+ if(state.dayOneInquiryStep===1)return dayOnePendingFooter();
+ return `<div class="chat-compose"><span>⊕</span><input disabled placeholder="暂时没有更多可发送的消息"/><span>☺</span></div>`;
+}
+function sendDayOneInquiry(choice){
+ if(![1,2].includes(choice)||!['neighbor','group'].includes(state.dayOneChoice)||state.dayOneInquiryStep!==0)return;
+ const kind=state.dayOneChoice;
+ state.dayOneInquiryTextChoice=choice;
+ state.dayOneInquiryStep=1;
+ state.dayOneInquirySentAt=Date.now();
+ state.stress=dayOneClamp(state.stress+(kind==='neighbor'?1:2));
+ store();render();scheduleDayOneConversationReplies();
+}
+function deliverDayOneInquiry(){
+ dayOneInquiryTimer=null;
+ if(state.dayOneInquiryStep!==1 || !['neighbor','group'].includes(state.dayOneChoice))return;
+ const kind=state.dayOneChoice;
+ state.dayOneInquiryStep=2;state.dayOneAsked=true;
+ store();
+ const target=kind==='neighbor'?'neighbor':'chat';
+ const name=kind==='neighbor'?'王雨桐':'物业管家-小林';
+ const text=dayOneInquiryResponse(kind,state.dayOneInquiryTextChoice);
+ if(!isViewingTarget(target))banner(text,name,target);
+ if(state.page!=='rules'&&state.page!=='members')render();
+}
+function deliverDayOneMimi(){
+ dayOneMimiTimer=null;
+ if(![1,3].includes(state.dayOneMimiStep))return;
+ const first=state.dayOneMimiStep===1;
+ state.dayOneMimiStep=first?2:4;
+ store();
+ const text=first?T('Day1闺蜜回应'+(state.dayOneMimiChoice||1)):T('Day1闺蜜收尾');
+ if(state.page!=='mimi-story')banner(text,'米米','mimi-story');
+ if(state.page!=='rules'&&state.page!=='members')render();
+}
+function scheduleDayOneConversationReplies(){
+ if(state.dayOneInquiryStep===1&&state.dayOneInquirySentAt>0){
+  if(!dayOneInquiryTimer){
+   const wait=Math.max(30,Number(state.dayOneInquirySentAt)+dayOneReplyDelay()-Date.now());
+   dayOneInquiryTimer=setTimeout(deliverDayOneInquiry,wait);
+  }
+ }else if(dayOneInquiryTimer){clearTimeout(dayOneInquiryTimer);dayOneInquiryTimer=null;}
+ if([1,3].includes(state.dayOneMimiStep)&&state.dayOneMimiSentAt>0){
+  if(!dayOneMimiTimer){
+   const wait=Math.max(30,Number(state.dayOneMimiSentAt)+dayOneReplyDelay()-Date.now());
+   dayOneMimiTimer=setTimeout(deliverDayOneMimi,wait);
+  }
+ }else if(dayOneMimiTimer){clearTimeout(dayOneMimiTimer);dayOneMimiTimer=null;}
+}
+
 function dayOneSync(){
  if(state.phoneActivated && Number(state.yutongStage)>=5 && !state.dayOneUnlocked){
   state.dayOneUnlocked=true;
@@ -24,9 +109,9 @@ function dayOneHomeGuide(){
  // Day 1 story cues are visible only on the home screen, never inside a chat.
  if(state.dayOneSlept)return `<div class="d1-home-tip"><span>DAY 1 COMPLETE</span><strong>今晚已经结束</strong><button onclick="go('day-end')">回顾 Day 1 →</button></div>`;
  if(!state.dayOneBodySeen)return `<div class="d1-home-tip d1-discovery"><span>桌面发生了变化</span><strong>好像多出了一个应用……</strong><small>看看新出现的「身体状态」图标。</small></div>`;
- if(!state.dayOneAsked)return `<div class="d1-home-tip d1-discovery"><span>身体状态</span><strong>这些数字是怎么回事？</strong><small>点开「身体状态」，想想要不要问问谁。</small></div>`;
+ if(!state.dayOneAsked){if(state.dayOneChoice){const target=state.dayOneChoice==='neighbor'?'neighbor':'chat';return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>${state.dayOneInquiryStep===1?'消息已发出，等对方回复':'刚才还没把话问出口'}</strong><button onclick="go('${target}')">返回聊天 →</button></div>`;}return `<div class="d1-home-tip d1-discovery"><span>身体状态</span><strong>这些数字是怎么回事？</strong><small>点开「身体状态」，想想要不要问问谁。</small></div>`;}
  if(!dayOneAllDone())return `<div class="d1-home-tip d1-discovery"><span>今晚还没结束</span><strong>备忘录里还有 ${DAY1_TASKS.length-dayOneCompleted()} 项待办</strong><small>打开桌面上的「备忘录」，收拾一下吧。</small></div>`;
- if(state.dayOneMimiStep<2)return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>给米米发个消息吧</strong><button onclick="go('mimi-story')">和米米聊聊今天 →</button></div>`;
+ if(state.dayOneMimiStep<4)return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>给米米发个消息吧</strong><button onclick="go('mimi-story')">和米米聊聊今天 →</button></div>`;
  return `<div class="d1-home-tip d1-discovery"><span>夜深了</span><strong>今天就到这里吧</strong><button onclick="go('day1-night')">准备入睡 →</button></div>`;
 }
 function dayOneTaskTitle(task){return T('Day1'+task.title+'标题')||task.title}
@@ -47,7 +132,7 @@ function renderDayOnePage(){
  }
  if(page==='notes'&&state.dayOneUnlocked){
   const done=dayOneCompleted();
-  view.innerHTML=`${d1Header('备忘录')}<div class="scroll d1-flat-scroll d1-notes"><div class="d1-eyebrow">我的待办 · 今日</div><h2 class="d1-big-heading">今晚要做的事</h2><p class="d1-subheading">回家后的几件小事，做完就能休息了。</p><div class="d1-progress"><span>已完成 ${done} / ${DAY1_TASKS.length}</span><span>${Math.round(done/DAY1_TASKS.length*100)}%</span></div><div class="d1-progress-track"><span style="width:${done/DAY1_TASKS.length*100}%"></span></div><div class="d1-task-list">${DAY1_TASKS.map(t=>{const yes=!!state.dayOneTasks[t.id];return `<button class="d1-task-row ${yes?'completed':''}" onclick="openDayOneTask('${t.id}')"><img src="${t.image}" alt=""/><span class="d1-task-copy"><strong>${dayOneTaskTitle(t)}</strong><small>${yes?'已完成':clean(t.hint)}</small></span><span class="d1-switch ${yes?'on':''}" role="switch" aria-checked="${yes}" aria-label="${clean(t.title)}${yes?'已完成':'待完成'}"><i></i></span></button>`}).join('')}</div><div class="d1-note-divider"></div><button class="d1-note-link" onclick="go('clues')"><span>奇怪的事情</span><small>${state.clues} 条线索　›</small></button>${!state.dayOneBodySeen?`<button class="d1-secondary" onclick="go('body-status')">查看身体状态 →</button>`:''}${done===DAY1_TASKS.length?`<div class="d1-task-next"><p>今晚的待办都完成了。</p>${state.dayOneMimiStep<2?`<button class="d1-primary" onclick="go('mimi-story')">和米米聊聊今天 →</button>`:`<button class="d1-primary" onclick="go('day1-night')">入睡 →</button>`}</div>`:''}</div></div>`;
+  view.innerHTML=`${d1Header('备忘录')}<div class="scroll d1-flat-scroll d1-notes"><div class="d1-eyebrow">我的待办 · 今日</div><h2 class="d1-big-heading">今晚要做的事</h2><p class="d1-subheading">回家后的几件小事，做完就能休息了。</p><div class="d1-progress"><span>已完成 ${done} / ${DAY1_TASKS.length}</span><span>${Math.round(done/DAY1_TASKS.length*100)}%</span></div><div class="d1-progress-track"><span style="width:${done/DAY1_TASKS.length*100}%"></span></div><div class="d1-task-list">${DAY1_TASKS.map(t=>{const yes=!!state.dayOneTasks[t.id];return `<button class="d1-task-row ${yes?'completed':''}" onclick="openDayOneTask('${t.id}')"><img src="${t.image}" alt=""/><span class="d1-task-copy"><strong>${dayOneTaskTitle(t)}</strong><small>${yes?'已完成':clean(t.hint)}</small></span><span class="d1-switch ${yes?'on':''}" role="switch" aria-checked="${yes}" aria-label="${clean(t.title)}${yes?'已完成':'待完成'}"><i></i></span></button>`}).join('')}</div><div class="d1-note-divider"></div><button class="d1-note-link" onclick="go('clues')"><span>奇怪的事情</span><small>${state.clues} 条线索　›</small></button>${!state.dayOneBodySeen?`<button class="d1-secondary" onclick="go('body-status')">查看身体状态 →</button>`:''}${done===DAY1_TASKS.length?`<div class="d1-task-next"><p>今晚的待办都完成了。</p>${state.dayOneMimiStep<4?`<button class="d1-primary" onclick="go('mimi-story')">和米米聊聊今天 →</button>`:`<button class="d1-primary" onclick="go('day1-night')">入睡 →</button>`}</div>`:''}</div></div>`;
   return true;
  }
  if(page==='day1-task'){
@@ -70,9 +155,15 @@ function renderDayOnePage(){
   if(!state.dayOneAsked||!dayOneAllDone()){goHome();return true}
   const step=Number(state.dayOneMimiStep)||0;
   const bubbles=[`<div class="day-divide">今天 20:48</div>`,msg('米米',T('Day1闺蜜开场1'),'friend'),msg('米米',T('Day1闺蜜开场2'),'friend')];
-  if(step>=1)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),'renter',true),msg('米米',T('Day1闺蜜回应'+(state.dayOneMimiChoice||1)),'friend'));
-  if(step>=2)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家晚安')||'好呀，晚安～','renter',true),msg('米米',T('Day1闺蜜收尾'),'friend'));
-  view.innerHTML=`<div class="screen chat-screen d1-mimi-chat"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>米米</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('米米')}')">⋯</button></div><div class="scroll" id="mimi-day1-scroll"><div class="chat-messages">${bubbles.join('')}</div></div>${step===0?`<div class="reply-area"><div class="reply-hint">回复米米</div><button class="reply-option" onclick="replyDayOneMimi(1)">${E('Day1闺蜜玩家回复1')}</button><button class="reply-option" onclick="replyDayOneMimi(2)">${E('Day1闺蜜玩家回复2')}</button></div>`:step===1?`<div class="reply-area"><button class="reply-option" onclick="finishDayOneMimi()">和她说晚安 →</button></div>`:`<div class="reply-area"><button class="reply-option" onclick="go('day1-night')">放下手机，准备入睡 →</button></div>`}</div>`;
+  if(step>=1)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),'renter',true));
+  if(step>=2)bubbles.push(msg('米米',T('Day1闺蜜回应'+(state.dayOneMimiChoice||1)),'friend'));
+  if(step>=3)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家晚安')||'好呀，晚安～','renter',true));
+  if(step>=4)bubbles.push(msg('米米',T('Day1闺蜜收尾'),'friend'));
+  const actions=step===0?`<div class="reply-area d1-reply-area"><div class="reply-hint">回复米米</div><button class="reply-option" onclick="replyDayOneMimi(1)">${E('Day1闺蜜玩家回复1')}</button><button class="reply-option" onclick="replyDayOneMimi(2)">${E('Day1闺蜜玩家回复2')}</button></div>`:
+    step===1||step===3?dayOnePendingFooter():
+    step===2?`<div class="reply-area d1-reply-area"><div class="reply-hint">回复米米</div><button class="reply-option" onclick="finishDayOneMimi()">${E('Day1闺蜜玩家晚安')||'好呀，晚安～'}</button></div>`:
+    `<div class="reply-area"><button class="reply-option" onclick="go('day1-night')">放下手机，准备入睡 →</button></div>`;
+  view.innerHTML=`<div class="screen chat-screen d1-mimi-chat"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>米米</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent('米米')}')">⋯</button></div><div class="scroll" id="mimi-day1-scroll"><div class="chat-messages">${bubbles.join('')}</div></div>${actions}</div>`;
   document.getElementById('mimi-day1-scroll').scrollTop=99999;
   return true;
  }
@@ -101,9 +192,7 @@ function chooseDayOneInquiry(kind){
  if(!state.dayOneBodySeen){notify('先看看新出现的「身体状态」');goHome();return}
  if(state.dayOneAsked){notify('已经决定过要问谁了');goHome();return}
  if(!['neighbor','group','none'].includes(kind))return;
- state.dayOneChoice=kind;state.dayOneAsked=true;
- if(kind==='neighbor')state.stress=dayOneClamp(state.stress+1);
- if(kind==='group')state.stress=dayOneClamp(state.stress+2);
+ state.dayOneChoice=kind;state.dayOneInquiryStep=kind==='none'?2:0;state.dayOneInquiryTextChoice=0;state.dayOneAsked=kind==='none';
  // A question opens the corresponding conversation, but returning from it
  // must take the player to the home screen rather than back into the choice menu.
  store();
@@ -111,24 +200,17 @@ function chooseDayOneInquiry(kind){
  go(kind==='neighbor'?'neighbor':'chat');
  state.navStack=['home'];store();
 }
-function dayOneGroupExtra(){
- if(state.dayOneAsked&&state.dayOneChoice==='group')return `<div class="day-divide">今天 20:44</div>${msg(state.playerId||'我',T('Day1问物业正文'),'renter',true)}${msg('物业管家-小林',T('Day1物业回应'),'house')}`;
- return '';
-}
-function dayOneNeighborExtra(){
- if(state.dayOneAsked&&state.dayOneChoice==='neighbor')return `<div class="day-divide">今天 20:44</div>${msg(state.playerId||'我',T('Day1问邻居正文'),'renter',true)}${msg('王雨桐',T('Day1邻居回应'),'friend')}`;
- return '';
-}
-function dayOneChatFooter(){return ''}
-function dayOneNeighborFooter(){return ''}
 function replyDayOneMimi(choice){
  if(!state.dayOneAsked||!dayOneAllDone()){notify('先完成今晚的事');goHome();return}
  if(state.dayOneMimiStep!==0)return;
- state.dayOneMimiStep=1;state.dayOneMimiChoice=choice;state.mood=dayOneClamp(state.mood+3);store();render();
+ state.dayOneMimiStep=1;state.dayOneMimiChoice=choice;state.dayOneMimiSentAt=Date.now();state.mood=dayOneClamp(state.mood+3);store();render();scheduleDayOneConversationReplies();
 }
-function finishDayOneMimi(){state.dayOneMimiStep=2;store();render()}
+function finishDayOneMimi(){
+ if(state.dayOneMimiStep!==2)return;
+ state.dayOneMimiStep=3;state.dayOneMimiSentAt=Date.now();store();render();scheduleDayOneConversationReplies();
+}
 function finishDayOneSleep(){
- if(!dayOneAllDone() || state.dayOneMimiStep<2){notify('先完成待办并和米米聊完');return}
+ if(!dayOneAllDone() || state.dayOneMimiStep<4){notify('先完成待办并和米米聊完');return}
  state.dayOneSlept=true;state.stamina=dayOneClamp(state.stamina+12);
  store();go('day-end');
 }
