@@ -7,32 +7,33 @@ const RR_ARCHIVE_VERSION=2;
 const RR_NODES=[
  {id:'phone',name:'查看手机',tag:'20:16 · 开场',desc:'这晚的消息从这里开始。',page:'home',ready:s=>!!s.phoneActivated},
  {id:'group-reply',name:'查看群公告',tag:'微信群 · 调查',desc:'群里有人指出那条奇怪的通知。',page:'chat',ready:s=>s.stage>=7&&!s.reply},
- {id:'neighbor-reply',name:'查看邻居消息',tag:'微信私聊 · 选择',desc:'认识住在 301 的王雨桐。',page:'neighbor',ready:s=>s.yutongStage===2&&!s.yutongReply},
+ {id:'neighbor-reply',name:'看邻居消息',tag:'微信私聊 · 选择',desc:'认识住在 301 的王雨桐。',page:'neighbor',ready:s=>s.yutongStage===2&&!s.yutongReply},
  {id:'status-discovery',name:'发现新应用',tag:'手机桌面 · 异常',desc:'发现那款从未安装过的应用。',page:'home',ready:s=>s.dayOneUnlocked&&!s.dayOneBodySeen},
- {id:'investigate',name:'决定是否询问',tag:'身体状态 · 分岔',desc:'看完身体数据后选择如何回应。',page:'day1-choose',ready:s=>s.dayOneBodySeen&&!s.dayOneChoice},
+ {id:'investigate',name:'决定询问',tag:'身体状态 · 分岔',desc:'看完身体数据后选择如何回应。',page:'day1-choose',ready:s=>s.dayOneBodySeen&&!s.dayOneChoice},
  {id:'group-alert',name:'群内追问',tag:'危险支线',desc:'在群里向小林提出敏感问题。',page:'chat',ready:s=>s.dayOneChoice==='group'&&s.dayOneInquiryStep===2&&!s.nightChoice},
- {id:'group-ending',name:'被点名',tag:'BE 01',desc:'群聊里的追问导致的结局。',page:'night-ending',ready:s=>s.storyEnding==='day1-group-death'},
+ {id:'group-ending',name:'公开追问',tag:'BE 03',desc:'群聊里的追问导致的结局。',page:'night-ending',ready:s=>s.storyEnding==='day1-group-death'},
  {id:'neighbor-ask',name:'询问王雨桐',tag:'邻居支线',desc:'向隔壁邻居确认自己的疑惑。',page:'neighbor',ready:s=>s.dayOneChoice==='neighbor'&&s.dayOneInquiryStep===2&&!s.nightChoice},
  {id:'no-ask',name:'暂时不问',tag:'沉默支线',desc:'先不问别人，做自己的事。',page:'home',ready:s=>s.dayOneChoice==='none'&&s.dayOneAsked&&!s.nightChoice},
  {id:'chores',name:'完成待办',tag:'家务 · 自由行动',desc:'整理纸箱、检查门窗、吃点东西。',page:'notes',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&!Object.values(s.dayOneTasks||{}).some(Boolean)},
  {id:'mimi',name:'和米米聊天',tag:'微信 · 夜谈',desc:'待办结束，和闺蜜聊聊今晚。',page:'mimi-story',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&typeof dayOneAllDone==='function'&&dayOneAllDone()&&s.dayOneMimiStep===0},
  {id:'night-choice',name:'睡前选择',tag:'夜晚 · 分岔',desc:'关灯睡觉，还是再刷刷手机？',page:'day1-night',ready:s=>s.dayOneChoice!=='group'&&s.dayOneMimiStep>=4&&!s.nightChoice&&!s.storyEnding},
  {id:'sleep-branch',name:'直接睡觉',tag:'危险支线',desc:'熄灯后听到走廊里的脚步。',page:'night-danger',ready:s=>s.nightChoice==='sleep'&&!s.storyEnding},
- {id:'sleep-ending',name:'门外脚步',tag:'BE 02',desc:'未能察觉来访者的结局。',page:'night-ending',ready:s=>s.nightChoice==='sleep'&&s.storyEnding==='day1-sleep-death'},
+ {id:'sleep-ending',name:'未修门牌',tag:'BE 01',desc:'没有修好门牌。',page:'night-ending',ready:s=>s.nightChoice==='sleep'&&s.storyEnding==='day1-no-repair-death'},
  {id:'late-screen',name:'继续看手机',tag:'手机调查',desc:'放下睡意，继续检查手机。',page:'home',ready:s=>s.nightChoice==='browse'&&s.nightPhase==='waiting'},
- {id:'lin-withdraw',name:'查看小林私信',tag:'微信 · 限时事件',desc:'收到后又被撤回的私信。',page:'direct-chat',ready:s=>s.nightChoice==='browse'&&s.nightLinMessage===2},
+ {id:'lin-withdraw',name:'看小林消息',tag:'微信 · 限时事件',desc:'收到后又被撤回的私信。',page:'direct-chat',ready:s=>s.nightChoice==='browse'&&s.nightLinMessage===2},
  {id:'late-misread',name:'错误报修',tag:'手机调查 · 危险分岔',desc:'按普通维修理解小林的暗示。',page:'night-danger',ready:s=>s.nightChoice==='misread'&&!s.storyEnding},
  {id:'late-misread-end',name:'门外脚步',tag:'BE 02 · 错误路线',desc:'门牌仍在核对名单上。',page:'night-ending',ready:s=>s.nightChoice==='misread'&&s.storyEnding==='day1-sleep-death'},
- {id:'repair',name:'提交门牌报修',tag:'物业服务 · 操作',desc:'查看门牌并留下报修记录。',page:'repairs',ready:s=>['accepted','fixed'].includes(s.nightRepairStatus)&&!s.storyEnding},
+ {id:'repair',name:'提交报修',tag:'物业服务 · 操作',desc:'查看门牌并留下报修记录。',page:'repairs',ready:s=>['accepted','fixed'].includes(s.nightRepairStatus)&&!s.storyEnding},
  {id:'quiet-night',name:'放下手机',tag:'深夜 · 危险',desc:'没有维修门牌。',page:'night-danger',ready:s=>s.nightChoice==='ignored'&&!s.storyEnding},
- {id:'repair-fixed',name:'门牌修好',tag:'物业维修',desc:'听见工具声后，确认维修结束。',page:'night-door',ready:s=>s.nightRepairStatus==='fixed'&&!s.storyEnding},
- {id:'ignored-ending',name:'未维修死亡',tag:'BE 02',desc:'没有修理门牌。',page:'night-ending',ready:s=>s.nightChoice==='ignored'&&s.storyEnding==='day1-sleep-death'},
+ {id:'repair-fixed',name:'门牌修好',tag:'物业维修',desc:'听见工具声后，确认维修结束。',page:'night-after-repair',ready:s=>s.nightRepairStatus==='fixed'&&!s.storyEnding},
+ {id:'ignored-ending',name:'未修门牌',tag:'BE 01',desc:'没有修理门牌。',page:'night-ending',ready:s=>s.nightChoice==='ignored'&&s.storyEnding==='day1-no-repair-death'},
  {id:'first-night',name:'第一夜幸存',tag:'Day 1 · 生还',desc:'门外的人略过了 302 室。',page:'day-end',ready:s=>s.storyEnding==='day1-survivor'}
 ];
 const RR_ENDINGS=[
  {id:'day1-survivor',name:'第一夜 · 幸存',kind:'survival',chapter:1,summary:'你读到小林撤回的消息，查看门牌并报修。维修工到场，重新固定了 302 的门牌。这一夜，你活了下来。'},
- {id:'day1-group-death',name:'BE 01 · 被点名的人',kind:'bad',chapter:1,summary:'在业主群里公开追问以后，异常的来访者知道了你的房号，也知道你在怀疑什么。'},
- {id:'day1-sleep-death',name:'BE 02 · 门外的脚步',kind:'bad',chapter:1,summary:'第一夜，302 室没能从门牌核验名单里消失。你可能太早睡去，也可能误解了那句短暂出现的暗示。'}
+ {id:'day1-no-repair-death',name:'BE 01 · 未修门牌',kind:'bad',chapter:1,summary:'302 的门牌尚未修好。夜里，脚步停在门口，门锁转动，房门被打开。'},
+ {id:'day1-group-death',name:'BE 03 · 公开追问',kind:'bad',chapter:1,summary:'你在群里公开追问。夜里，脚步停在 302 室门前，房门被打开。'},
+ {id:'day1-sleep-death',name:'BE 02 · 错误报修',kind:'bad',chapter:1,summary:'错误的报修事项没有让门牌得到维修。第一夜，门外来者推开了 302 的门。'}
 ];
 function rrDefaultArchive(){return {version:RR_ARCHIVE_VERSION,nodes:{},branches:{},endings:{}}}
 function rrReadArchive(){

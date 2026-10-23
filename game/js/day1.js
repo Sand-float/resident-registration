@@ -96,13 +96,13 @@ function scheduleDayOneConversationReplies(){
 
 function dayOneSync(){
  if(state.phoneActivated && Number(state.yutongStage)>=5 && !state.dayOneUnlocked){
-  state.dayOneUnlocked=true;
+  state.dayOneUnlocked=true;state.appRevealPending=true;
   state.dayOneTasks=state.dayOneTasks||{};
   store();
  }
  if(!state.dayOneTasks || typeof state.dayOneTasks!=='object')state.dayOneTasks={};
 }
-function unlockDayOne(){if(!state.dayOneUnlocked){state.dayOneUnlocked=true;state.dayOneTasks=state.dayOneTasks||{};store();}if(state.page==='home')render();}
+function unlockDayOne(){if(!state.dayOneUnlocked){state.dayOneUnlocked=true;state.appRevealPending=true;state.dayOneTasks=state.dayOneTasks||{};store();}if(state.page==='home')render();}
 function dayOneOnNavigate(p){if(p==='body-status' && !state.dayOneBodySeen){state.dayOneBodySeen=true;store();}}
 const dayOneAllDone=()=>DAY1_TASKS.every(t=>!!state.dayOneTasks?.[t.id]);
 const dayOneCompleted=()=>DAY1_TASKS.filter(t=>!!state.dayOneTasks?.[t.id]).length;
@@ -116,7 +116,7 @@ function dayOneHomeGuide(){
  if(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.storyEnding)return `<div class="d1-home-tip d1-discovery"><span>群聊</span><strong>小林突然让你不要继续追问。</strong><button onclick="go('chat')">看看接下来的消息 →</button></div>`;
  if(!dayOneAllDone())return `<div class="d1-home-tip d1-discovery"><span>今晚还没结束</span><strong>备忘录里还有 ${DAY1_TASKS.length-dayOneCompleted()} 项待办</strong><small>打开桌面上的「备忘录」，收拾一下吧。</small></div>`;
  if(state.dayOneMimiStep<4)return `<div class="d1-home-tip d1-discovery"><span>微信</span><strong>给米米发个消息吧</strong><button onclick="go('mimi-story')">和米米聊聊今天 →</button></div>`;
- return `<div class="d1-home-tip d1-discovery"><span>夜深了</span><strong>手机还没有放下</strong><button onclick="go('day1-night')">接下来做什么？ →</button></div>`;
+ return `<div class="d1-home-tip d1-discovery"><span>夜深了</span><strong>你可以收起手机去睡觉。</strong><button onclick="go('day1-night')">接下来做什么？ →</button></div>`;
 }
 function dayOneTaskTitle(task){return T('Day1'+task.title+'标题')||task.title}
 function dayOneTaskDesc(task){return T('Day1'+task.title+'描述')||task.hint}
@@ -136,7 +136,7 @@ function renderDayOnePage(){
  }
  if(page==='notes'&&state.dayOneUnlocked){
   const done=dayOneCompleted();
-  view.innerHTML=`${d1Header('备忘录')}<div class="scroll d1-flat-scroll d1-notes"><div class="d1-eyebrow">我的待办 · 今日</div><h2 class="d1-big-heading">今晚要做的事</h2><p class="d1-subheading">回家后的几件小事，做完就能休息了。</p><div class="d1-progress"><span>已完成 ${done} / ${DAY1_TASKS.length}</span><span>${Math.round(done/DAY1_TASKS.length*100)}%</span></div><div class="d1-progress-track"><span style="width:${done/DAY1_TASKS.length*100}%"></span></div><div class="d1-task-list">${DAY1_TASKS.map(t=>{const yes=!!state.dayOneTasks[t.id];return `<button class="d1-task-row ${yes?'completed':''}" onclick="openDayOneTask('${t.id}')"><img src="${t.image}" alt=""/><span class="d1-task-copy"><strong>${dayOneTaskTitle(t)}</strong><small>${yes?'已完成':clean(t.hint)}</small></span><span class="d1-switch ${yes?'on':''}" role="switch" aria-checked="${yes}" aria-label="${clean(t.title)}${yes?'已完成':'待完成'}"><i></i></span></button>`}).join('')}</div><div class="d1-note-divider"></div><button class="d1-note-link" onclick="go('clues')"><span>奇怪的事情</span><small>${state.clues} 条线索　›</small></button>${!state.dayOneBodySeen?`<button class="d1-secondary" onclick="go('body-status')">查看身体状态 →</button>`:''}${done===DAY1_TASKS.length?`<div class="d1-task-next"><p>今晚的待办都完成了。</p>${state.dayOneMimiStep<4?`<button class="d1-primary" onclick="go('mimi-story')">和米米聊聊今天 →</button>`:`<button class="d1-primary" onclick="go('day1-night')">结束今晚的待办 →</button>`}</div>`:''}</div></div>`;
+  view.innerHTML=`${d1Header('备忘录')}<div class="scroll d1-flat-scroll d1-notes"><div class="d1-eyebrow">我的待办 · 今日</div><h2 class="d1-big-heading">今晚要做的事</h2><p class="d1-subheading">回家后的几件小事，做完就能休息了。</p><div class="d1-progress"><span>已完成 ${done} / ${DAY1_TASKS.length}</span><span>${Math.round(done/DAY1_TASKS.length*100)}%</span></div><div class="d1-progress-track"><span style="width:${done/DAY1_TASKS.length*100}%"></span></div><div class="d1-task-list">${DAY1_TASKS.map(t=>{const yes=!!state.dayOneTasks[t.id];return `<button class="d1-task-row ${yes?'completed':''}" onclick="openDayOneTask('${t.id}')"><img src="${t.image}" alt=""/><span class="d1-task-copy"><strong>${dayOneTaskTitle(t)}</strong><small>${yes?'已完成':clean(t.hint)}</small></span><span class="d1-switch ${yes?'on':''}" role="switch" aria-checked="${yes}" aria-label="${clean(t.title)}${yes?'已完成':'待完成'}"><i></i></span></button>`}).join('')}</div><div class="d1-note-divider"></div><button class="d1-note-link" onclick="go('clues')"><span>奇怪的事情</span><small>${visibleClueCount()} 条线索　›</small></button>${!state.dayOneBodySeen?`<button class="d1-secondary" onclick="go('body-status')">查看身体状态 →</button>`:''}${done===DAY1_TASKS.length?`<div class="d1-task-next"><p>今晚的待办都完成了。</p>${state.dayOneMimiStep<4?`<button class="d1-primary" onclick="go('mimi-story')">和米米聊聊今天 →</button>`:`<button class="d1-primary" onclick="go('day1-night')">结束今晚的待办 →</button>`}</div>`:''}</div></div>`;
   return true;
  }
  if(page==='day1-task'){
@@ -147,18 +147,18 @@ function renderDayOnePage(){
  }
  if(page==='day1-task-result'){
   const t=DAY1_TASKS.find(a=>a.id===state.dayOneTaskId)||DAY1_TASKS[0];
-  view.innerHTML=`${d1Header('待办已完成')}<div class="scroll d1-event"><div class="d1-event-image"><img src="${t.image}" alt=""/></div><div class="d1-event-copy"><span class="d1-eyebrow">已完成 · 20:${16+dayOneCompleted()*8}</span><h2>${dayOneTaskTitle(t)} <span class="d1-check">✓</span></h2><p>${clean(dayOneTaskResult(t))}</p><div class="d1-effect ${t.costClass}">${clean(t.cost)}</div></div><div class="d1-event-bottom"><button class="d1-primary" onclick="go('notes')">返回待办 →</button></div></div></div>`;
+  view.innerHTML=`${d1Header('待办已完成')}<div class="scroll d1-event"><div class="d1-event-image"><img src="${t.image}" alt=""/></div><div class="d1-event-copy"><span class="d1-eyebrow">已完成 · ${fictionalClock()}</span><h2>${dayOneTaskTitle(t)} <span class="d1-check">✓</span></h2><p>${clean(dayOneTaskResult(t))}</p><div class="d1-effect ${t.costClass}">${clean(t.cost)}</div></div><div class="d1-event-bottom"><button class="d1-primary" onclick="go('notes')">返回待办 →</button></div></div></div>`;
   return true;
  }
  if(page==='day1-choose'){
   if(!state.dayOneBodySeen){goHome();return true}
-  view.innerHTML=`${d1Header('今晚的消息')}<div class="scroll d1-choice-page"><span class="d1-eyebrow">20:43 · 一点疑惑</span><h2>${E('Day1选择标题')}</h2><p>${E('Day1选择说明')}</p><div class="d1-choice-list"><button onclick="chooseDayOneInquiry('neighbor')"><strong>问问王雨桐</strong><small>和隔壁邻居再聊聊</small><span>›</span></button><button onclick="chooseDayOneInquiry('group')"><strong>问问物业群</strong><small>看看小林有没有新消息</small><span>›</span></button><button onclick="chooseDayOneInquiry('none')"><strong>什么都不问</strong><small>暂时不问，先把手头的事做完</small><span>›</span></button></div></div></div>`;
+  view.innerHTML=`${d1Header('今晚的消息')}<div class="scroll d1-choice-page"><span class="d1-eyebrow">${fictionalClock()} · 一点疑惑</span><h2>${E('Day1选择标题')}</h2><p>${E('Day1选择说明')}</p><div class="d1-choice-list"><button onclick="chooseDayOneInquiry('neighbor')"><strong>问问王雨桐</strong><small>和隔壁邻居再聊聊</small><span>›</span></button><button onclick="chooseDayOneInquiry('group')"><strong>问问物业群</strong><small>看看小林有没有新消息</small><span>›</span></button><button onclick="chooseDayOneInquiry('none')"><strong>什么都不问</strong><small>暂时不问，先把手头的事做完</small><span>›</span></button></div></div></div>`;
   return true;
  }
  if(page==='mimi-story'){
   if(!state.dayOneAsked||!dayOneAllDone()){goHome();return true}
   const step=Number(state.dayOneMimiStep)||0;
-  const bubbles=[`<div class="day-divide">昨天</div>`,...directEntries('米米').map(m=>msg(m.speaker,m.body,'friend',m.mine)),`<div class="day-divide">今天 20:48</div>`,msg('米米',T('Day1闺蜜开场1'),'friend'),msg('米米',T('Day1闺蜜开场2'),'friend')];
+  const bubbles=[`<div class="day-divide">昨天</div>`,...directEntries('米米').map(m=>msg(m.speaker,m.body,'friend',m.mine)),`<div class="day-divide">今天 ${fictionalClock()}</div>`,msg('米米',T('Day1闺蜜开场1'),'friend'),msg('米米',T('Day1闺蜜开场2'),'friend')];
   if(step>=1)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家回复'+(state.dayOneMimiChoice||1)),'renter',true));
   if(step>=2)bubbles.push(msg('米米',T('Day1闺蜜回应'+(state.dayOneMimiChoice||1)),'friend'));
   if(step>=3)bubbles.push(msg(state.playerId||'我',T('Day1闺蜜玩家晚安')||'好呀，晚安～','renter',true));
@@ -172,7 +172,7 @@ function renderDayOnePage(){
   return true;
  }
  if(page==='day-end'){
-  view.innerHTML=`<div class="d1-end-screen"><div class="d1-end-inner"><span class="d1-eyebrow">RESIDENT REGISTRATION</span><span class="d1-end-rule"></span><h1>Day 1</h1><h2>${state.storyEnding==='day1-survivor'?'第一夜幸存':'结束'}</h2><p>${state.storyEnding==='day1-survivor'?'门外响起了脚步声和工具碰撞的声音。<br>302 的门牌已经修好，报修单显示「已完成维修」。<br>天亮前，你保存了这张工单的截图。':L('Day1结束正文')}</p><div class="d1-end-numbers"><span>待办完成 <b>${dayOneCompleted()} / ${DAY1_TASKS.length}</b></span><span>发现线索 <b>${state.clues} 条</b></span></div><small>${state.storyEnding==='day1-survivor'?'第一夜已记录 · 后续章节待续':'故事还在继续。'}</small><button onclick="openStoryNodes()">再一次抉择 · 剧情回溯</button><button onclick="openEndingArchive()">查看结局图鉴</button><button onclick="returnDayOneTitle()">返回标题 →</button></div></div>`;
+  view.innerHTML=`<div class="d1-end-screen"><div class="d1-end-inner"><span class="d1-eyebrow">RESIDENT REGISTRATION</span><span class="d1-end-rule"></span><h1>Day 1</h1><h2>结束</h2><button onclick="openStoryNodes()">剧情回溯</button><button onclick="openEndingArchive()">结局图鉴</button><button onclick="returnDayOneTitle()">返回标题</button></div></div>`;
   return true;
  }
  return false;

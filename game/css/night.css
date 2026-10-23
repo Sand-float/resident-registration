@@ -57,3 +57,10 @@
 .rr-cg-next{background:#efe3e7e8;color:#333139;border-radius:8px;width:100%;min-height:48px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:550}
 .rr-cg-next span{font-size:19px}
 @media(prefers-reduced-motion:reduce){.rr-cg-visual img{animation:none!important}}
+
+.rr-cg-visual.photo-hold img{animation:none!important;transform:scale(1.12)}
+.rr-cg-next:disabled{opacity:.76;cursor:default}
+
+/* Ver. 4: remove all simulated zoom/shake per the revised scene direction. */
+.rr-cg-visual img,.rr-cg-visual.approach img,.rr-cg-visual.tremble img,.rr-cg-visual.reveal img{animation:none!important;transform:none!important;}
+.rr-cg-visual.photo-hold img{animation:none!important;transform:none!important;}

@@ -673,3 +673,8 @@ body[data-theme="light"]{--rr-accent:#ae879a;--rr-accent-ink:#fff}
 /* Accessible sound toggle. Does not alter game story or shared message styles. */
 .rr-audio-switch{width:100%;min-height:44px;justify-content:center}
 #statusbar{background:transparent!important;box-shadow:none!important}
+
+/* Show the newly installed app only after two quick soft screen blinks. */
+.phone-screen.rr-app-blink:after{content:'';position:absolute;inset:0;background:#fff8;pointer-events:none;z-index:35;animation:rrAppFlash .76s ease-out both;}
+@keyframes rrAppFlash{0%,22%,47%,70%,100%{opacity:0}10%,34%,58%{opacity:.7}}
+.rr-speed-hint{font-size:10px!important;color:#aaa;text-align:center;max-width:90%;margin:12px auto 0;line-height:1.5;}

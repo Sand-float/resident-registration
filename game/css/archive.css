@@ -77,3 +77,27 @@
 button.rr-tree-node.is-unlocked{cursor:pointer}
 .rr-tree-node strong{font-size:12px;line-height:1.45;text-align:center;font-weight:550}
 .rr-tree-node:hover.is-unlocked{border-color:#f0cbdf;background:#564258}
+
+/* Wide tree with touch-friendly horizontal scrolling, avoiding narrow stacked branches. */
+.rr-tree{width:max(730px,100%);max-width:none;overflow:visible}
+.rr-archive-scroll:has(.rr-tree){overflow-x:auto;overscroll-behavior-x:contain}
+.rr-tree-split{grid-template-columns:34% 66%}
+.rr-tree-mini-split{grid-template-columns:1fr 1fr}
+.rr-tree-node{min-width:94px}
+
+.rr-archive-scroll:has(.rr-tree){touch-action:pan-x pan-y;}
+.rr-tree{padding:5px 12px 25px;min-width:760px;}
+.rr-tree-mini-split{gap:12px;}
+
+/* Branch tree navigation: horizontal scrolling without compressed labels. */
+.rr-archive-scroll{overflow-x:auto;overscroll-behavior-x:contain;}
+.rr-tree{min-width:870px;width:870px;max-width:none;margin:0;overflow:visible;align-items:stretch;}
+.rr-tree-node{min-width:110px;max-width:100%;min-height:53px;padding:9px 10px;}
+.rr-tree-split{grid-template-columns:31% 69%;gap:16px;}
+.rr-tree-mini-split{gap:16px;}
+.rr-tree-branch-tag{white-space:nowrap;}
+
+/* Initial vertical trunk stays visible; branches scroll horizontally. */
+.rr-tree>.rr-tree-node{width:295px!important;min-width:0;max-width:295px;margin-left:18px;align-self:flex-start;}
+.rr-tree>.rr-tree-connector{align-self:flex-start;margin-left:165px;}
+.rr-tree>.rr-tree-split{align-self:flex-start;}
