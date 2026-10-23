@@ -1,0 +1,10 @@
+《住户登记》——不删除任何旧文件的上传方式
+
+1. GitHub 仓库 Code → Add file → Upload files。
+2. 解压 ZIP 后，只上传 index.html 和 resident_v2 整个文件夹（拖动这两个到网页上传区）。
+3. 提交 Commit changes。
+
+旧文件全部保留，不必删除；新 index.html 引用的 HTML/CSS/JS/图片/声音都在 resident_v2 下，不会调用旧脚本。
+以后更新只需覆盖这份目录的文件。
+
+注意：GitHub 网页上传界面需要展示 resident_v2/... 文件路径；如果没有带上路径，不要提交。
