@@ -3,17 +3,17 @@ const NIGHT_LIN_MESSAGE='今天翻以前的维修单，看到三栋302的门牌�
 const NIGHT_EVIDENCE={
  group:{source:'微信 · 业主群',title:'不在名单里的发言者',text:'发出门牌通知的黑头像不在群成员名单里。其他住户也注意到了。'},
  notice:{source:'微信 · 业主群',title:'物业否认的通知',text:'小林在群里否认发布过门牌核验通知。'},
- lin:{source:'微信 · 小林',title:'不合时宜的提醒',text:'小林深夜忽然提到楼层标识和报修记录，随即撤回。他为什么突然说这个？'},
- retract:{source:'微信 · 小林',title:'主动撤回',text:'我亲眼看见小林将一条重要私信撤回；微信列表也同步变成「撤回了一条消息」。'},
+ lin:{source:'微信 · 小林',title:'不合时宜的提醒',text:'小林深夜忽然提到报修记录，随即撤回。'},
  repair:{source:'物业服务 · 报事报修',title:'门牌报修单',text:'302 门牌只剩一颗螺丝固定，其余三个固定点已经松脱。我提交了门牌维修工单。'},
  oldticket:{source:'物业服务 · 历史工单',title:'短暂出现的历史工单',text:'物业服务中闪过一张更早的 302 室工单，联系人姓林。重新打开后却找不到了。'},
  access:{source:'物业服务 · 门禁记录',title:'异常门禁记录',text:'门禁记录显示，昨日深夜三栋有一次「未识别进入」，来源标注为未登记设备。'},
- body:{source:'手机桌面',title:'自行出现的应用',text:'吧啦吧啦……，里面记录了个人信息和身体数据。'},
+ body:{source:'手机桌面',title:'自行出现的应用',text:'手机桌面多出了「身体状态」，里面记录了个人信息和身体数据。'},
  archive:{source:'物业服务 · 历史记录',title:'有意被隐藏的记录',text:'302 室一张旧工单一闪而过。它没有出现在可查询的工单列表里。'}
 };
 function nightRecordEvidence(id){
  if(!NIGHT_EVIDENCE[id])return;
  state.investigation=state.investigation||{};
+ // 永久以线索 ID 去重；同一事件的重入/重绘不重复提示。
  if(state.investigation[id])return;
  state.investigation[id]=Date.now();
  state.clues=(Number(state.clues)||0)+1;
@@ -21,7 +21,18 @@ function nightRecordEvidence(id){
  store();
  if(typeof notify==='function')notify('获得线索：'+NIGHT_EVIDENCE[id].title);
 }
-function rrMigrateRemovedEvidence(){if(state.investigation?.hallway){delete state.investigation.hallway;store()}}
+function rrMigrateRemovedEvidence(){
+ state.investigation=state.investigation||{};
+ let changed=false;
+ if(state.investigation.hallway){delete state.investigation.hallway;changed=true}
+ // 旧版把线索拆成两条，且在仅仅打开私聊时就错误地收录了 lin。
+ if(state.investigation.retract){
+  if(state.nightLinMessage===2&&!state.investigation.lin)state.investigation.lin=state.investigation.retract;
+  delete state.investigation.retract;changed=true;
+ }
+ if(state.nightLinMessage!==2&&state.investigation.lin){delete state.investigation.lin;changed=true}
+ if(changed)store();
+}
 function nightInvestigationEntries(){
  rrMigrateRemovedEvidence();
  if(state.accessCluePromptedV6&&!state.investigation?.access){state.investigation=state.investigation||{};state.investigation.access=Date.now();store()}
@@ -42,14 +53,36 @@ function nightNoticeArrives(){
  if(state.page!=='direct-chat'||state.dmPerson!=='小林')banner(NIGHT_LIN_MESSAGE,'小林','direct-chat');
  if(state.page==='home'||state.page==='wechat'||state.page==='direct-chat')render();
 }
+// 按实际停留在小林私聊页面的累计时长计算撤回；离开页面和切后台均暂停。
+const NIGHT_LIN_VIEW_MS=10600; // 较上一版 11500 ms 仅缩短 0.9 秒
+function nightLinWatching(){return state.page==='direct-chat'&&state.dmPerson==='小林'&&!document.hidden&&state.nightChoice==='browse'&&state.nightLinMessage===1&&!state.storyEnding}
+function nightPauseLinView(){
+ if(nightTimers.retract){clearTimeout(nightTimers.retract);delete nightTimers.retract}
+ if(state.nightLinActiveSince){
+  state.nightLinViewedMs=(Number(state.nightLinViewedMs)||0)+Math.max(0,Date.now()-Number(state.nightLinActiveSince));
+  state.nightLinActiveSince=0;store();
+ }
+}
+function nightResumeLinView(){
+ if(!nightLinWatching())return;
+ if(!state.nightLinOpenedAt)state.nightLinOpenedAt=Date.now();
+ if(!state.nightLinActiveSince)state.nightLinActiveSince=Date.now();
+ store();scheduleNightEvents();
+}
 function nightRetractMessage(){
- if(state.nightChoice!=='browse'||state.nightLinMessage!==1||state.storyEnding)return;
+ if(!nightLinWatching()||!state.nightLinActiveSince)return;
+ const elapsed=(Number(state.nightLinViewedMs)||0)+Date.now()-Number(state.nightLinActiveSince);
+ if(elapsed<NIGHT_LIN_VIEW_MS){scheduleNightEvents();return}
+ nightPauseLinView();
  state.nightLinMessage=2;
  if(typeof SoundFX!=='undefined')SoundFX.play('retract');
- if(state.nightLinOpenedAt)nightRecordEvidence('retract');
- store();
- if(state.page==='direct-chat'&&state.dmPerson==='小林'||state.page==='wechat'||state.page==='home')render();
+ nightRecordEvidence('lin');
+ store();render();
 }
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden)nightPauseLinView();
+ else if(typeof state!=='undefined')nightResumeLinView();
+});
 function nightLinReply(){
  if(state.nightChoice!=='browse'||state.nightLinAsk!==1||state.storyEnding)return;
  state.nightLinAsk=2;store();
@@ -65,15 +98,13 @@ function nightRepairProcess(){
 function scheduleNightEvents(){
  if(state.storyEnding||state.nightChoice!=='browse'){nightCancelTimers();return}
  if(state.nightPhase==='waiting')nightSchedule('issue',Number(state.nightStep)||Date.now()+2100,nightNoticeArrives);
- if(state.nightLinMessage===1&&state.nightLinOpenedAt)nightSchedule('retract',Number(state.nightLinOpenedAt)+11500,nightRetractMessage);
+ if(nightLinWatching()&&state.nightLinActiveSince)nightSchedule('retract',Date.now()+Math.max(0,NIGHT_LIN_VIEW_MS-(Number(state.nightLinViewedMs)||0)-(Date.now()-Number(state.nightLinActiveSince))),nightRetractMessage);
  if(state.nightLinAsk===1&&state.nightLinAskAt)nightSchedule('reply',Number(state.nightLinAskAt)+Math.max(1500,Number(state.messageSpeed)||2200),nightLinReply);
  if(state.nightRepairStatus==='pending'&&state.nightRepairAt)nightSchedule('repair',Number(state.nightRepairAt)+2300,nightRepairProcess);
 }
 function nightOnNavigate(page){
  if(state.nightChoice!=='browse'||state.storyEnding)return;
- if(page==='direct-chat'&&state.dmPerson==='小林'&&state.nightLinMessage===1&&!state.nightLinOpenedAt){
-  state.nightLinOpenedAt=Date.now();nightRecordEvidence('lin');scheduleNightEvents();
- }
+ if(page==='direct-chat'&&state.dmPerson==='小林'&&state.nightLinMessage===1)nightResumeLinView();
 }
 function nightLinChatFooter(){
  if(state.nightChoice!=='browse'||state.dmPerson!=='小林')return '<div class="chat-compose dm-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>';
@@ -91,12 +122,15 @@ function nightAskLin(ask){
 function nightHomeHint(){
  if(state.nightLinMessage===0)return `<div class="d1-home-tip d1-discovery"><span>深夜 · ${fictionalClock()}</span><strong>手机屏幕一直亮着</strong><small>再看看微信里有没有新消息。</small></div>`;
  if(state.nightLinMessage===1)return `<div class="d1-home-tip d1-discovery"><span>${fictionalClock()} · 微信</span><strong>小林发来了一条私信</strong><small>打开微信，看看他说了什么。</small></div>`;
+ if(state.nightRepairStatus==='fixed')return `<div class="d1-home-tip d1-discovery"><span>00:12 · 维修结束</span><strong>门牌已经修好，可以休息了。</strong><button onclick="nightQuietEnding()">收起手机 →</button></div>`;
  if(state.nightRepairStatus==='accepted')return `<div class="d1-home-tip d1-discovery"><span>物业服务</span><strong>你提交的报修有了新进度</strong><small>打开物业服务查看。</small></div>`;
  if(state.nightRepairStatus==='pending')return `<div class="d1-home-tip d1-discovery"><span>物业服务</span><strong>报修已经提交</strong><small>看看工单有没有被受理。</small></div>`;
  return `<div class="d1-home-tip d1-discovery"><span>夜深了</span><strong>你可以收起手机去睡觉。</strong><button onclick="nightQuietEnding()">收起手机 →</button></div>`;
 }
 function nightQuietEnding(){
- if(state.nightChoice!=='browse'||state.nightLinMessage!==2||state.storyEnding||state.nightRepairStatus==='fixed')return;
+ if(state.nightChoice!=='browse'||state.storyEnding)return;
+ if(state.nightRepairStatus==='fixed'){go('night-after-repair');return}
+ if(state.nightLinMessage!==2)return;
  state.nightChoice='ignored';state.nightStep=0;store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightStartBrowse(){
@@ -104,7 +138,7 @@ function nightStartBrowse(){
  if(!state.nightChoice){
   state.gameClockMinute=Math.max(Number(state.gameClockMinute)||1216,23*60+12);
   state.nightChoice='browse';state.nightPhase='waiting';state.nightStep=Date.now()+2300;
-  state.nightLinMessage=0;state.nightLinOpenedAt=0;state.nightLinAsk=0;
+  state.nightLinMessage=0;state.nightLinOpenedAt=0;state.nightLinViewedMs=0;state.nightLinActiveSince=0;state.nightLinAsk=0;
   state.nightRepairStatus='';state.nightDoorStep=0;state.nightPlateChecked=false;state.nightRepairCategory='';
  }
  goHome();scheduleNightEvents();
