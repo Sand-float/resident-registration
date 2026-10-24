@@ -691,3 +691,5 @@ body[data-theme=dark] .rr-anon-action{background:#24262d}body[data-theme=dark] .
 .rr-anon-center button span{padding-left:10px}
 .rr-anon-locked .back-btn{opacity:.22;pointer-events:none}
 body[data-theme="dark"] .rr-anon-center button{background:#49414a;color:#f7ecf3;border-color:#796878}
+
+.rr-creator-credit{margin-top:9px;font-size:9px;letter-spacing:.08em;color:#e5d6dc;opacity:.75;text-align:center;font-weight:400;}
