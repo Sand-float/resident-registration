@@ -191,12 +191,13 @@ const clean=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt
 // 文本档案：姓名|好友/未添加|个性签名|朋友圈内容
 function personKey(name){
  const raw=String(name||'').trim();
- if(raw==='物业通知')return '物业通知';
- if(raw.includes('玩家姓名')||raw===state.playerId||raw==='我')return '我';
- if(raw.includes('米米')||raw.includes('闺闺'))return '米米';
- if(raw.includes('刘芳'))return '刘芳';
- if(raw.includes('小林'))return '小林';
- return raw.replace(/^[（(]?\d{3}[）)]?[-－\s]*/, '').trim();
+ if(raw==='物业通知')return '物业通知'; // Internal anonymous sender key, never shown as ID.
+ const bare=raw.replace(/^[（(]?\d{3}[）)]?[-－\s]*/, '').trim();
+ if(bare.includes('玩家姓名')||bare===(state.playerId||'')||bare==='我')return '我';
+ if(bare.includes('米米')||bare.includes('闺闺'))return '米米';
+ if(bare.includes('刘芳'))return '刘芳';
+ if(bare.includes('小林'))return '小林';
+ return bare;
 }
 function people(){
  const dict=Object.create(null);
@@ -213,21 +214,21 @@ const ORIGINAL_DISPLAY_IDS={
  '王雨桐':'雨桐','周立存':'周立存','赵峰':'阿峰','小熊':'小熊',
  '徐梅萍':'徐梅萍','李念':'念念','陈若曦':'若曦','你相信光吗':'你相信光吗',
  '闻澜':'闻澜','周乔安':'乔安','福兮祸兮':'福兮祸兮','刘欣':'刘欣',
- '邓冉':'邓冉','橙子':'橙子','物业通知':'物业通知'
+ '邓冉':'邓冉','橙子':'橙子','物业通知':''
 };
 const WECHAT_IDS={
  '我':'yolo_4_u','米米':'mi.0225','妈妈':'qh_woods','刘芳':'lfang_1979','小林':'linxz_work',
  '王雨桐':'rainy_tong','周立存':'zl.cun','赵峰':'zf_road','小熊':'bear_rainy',
  '徐梅萍':'meiping_xu','李念':'nian_li','陈若曦':'rx_chen','你相信光吗':'light_ov',
  '闻澜':'wenlan1024','周乔安':'qiaoan_w','福兮祸兮':'fu_xi','刘欣':'xin_liu',
- '邓冉':'dengran_','橙子':'little_orange','物业通知':'wy_notice'
+ '邓冉':'dengran_','橙子':'little_orange','物业通知':''
 };
-function originalDisplayId(key){return key==='我'?(state.playerId||'我'):(ORIGINAL_DISPLAY_IDS[key]||key)}
-function originalWechatId(key){return WECHAT_IDS[key]||('wx_'+Array.from(key).map(c=>c.codePointAt(0).toString(36)).join('').slice(0,14))}
+function originalDisplayId(key){return key==='我'?(state.playerId||'我'):(Object.prototype.hasOwnProperty.call(ORIGINAL_DISPLAY_IDS,key)?ORIGINAL_DISPLAY_IDS[key]:key)}
+function originalWechatId(key){if(key==='物业通知')return '';return WECHAT_IDS[key]||('wx_'+Array.from(key).map(c=>c.codePointAt(0).toString(36)).join('').slice(0,14))}
 function isWechatFriend(key){return key==='我'||people()[key]?.friend===true||!!state.friendAdds?.[key]}
 
 function groupNickname(key){
- if(key==='我')return state.playerId||'我';
+ if(key==='我')return '（302）'+(state.playerId||'我');
  const items=T('群成员名单').split('\n').map(s=>s.trim()).filter(Boolean);
  return items.find(line=>personKey(line)===key)||'';
 }
@@ -245,7 +246,7 @@ function getPerson(name){
 }
 function groupMemberLabel(raw){
  const key=personKey(raw);
- return groupNickname(key)||originalDisplayId(key);
+ return key==='物业通知'?'':(groupNickname(key)||originalDisplayId(key));
 }
 function editContactRemark(){
  const p=getPerson(state.person);
@@ -275,7 +276,8 @@ function personAvatar(name,size='sm'){
  return `<span class="avatar ${size} ${p.key==='我'?'self-av':''}" style="background:${black?'#050505':personHue(p.key)}">${black?'':p.key==='我'?avatarMark(state.avatar,size!=='lg'):'<span class="rr-avatar-silhouette" aria-hidden="true"></span>'}</span>`;
 }
 function profileButton(name,size='sm'){
- return `<button class="avatar-tap" title="查看${clean(name)}的资料" aria-label="查看${clean(name)}的资料" onclick="openPerson('${encodeURIComponent(name)}')">${personAvatar(name,size)}</button>`;
+ const label=personKey(name)==='物业通知'?'匿名发言者':clean(name);
+ return `<button class="avatar-tap" title="查看${label}的资料" aria-label="查看${label}的资料" onclick="openPerson('${encodeURIComponent(name)}')">${personAvatar(name,size)}</button>`;
 }
 function openPerson(encoded){state.person=decodeURIComponent(encoded);state.personSource=['chat','members','rules'].includes(state.page)?'group':'private';go('contact-profile')}
 function openDirect(encoded){
@@ -544,7 +546,7 @@ function render(){
  }
  if(state.page==='members'){
    const members=T('群成员名单').split('\n').filter(Boolean).map(a=>a.replace('玩家姓名',state.playerId||'我'));
-   view.innerHTML=`${header('聊天信息','chat')}<div class="scroll members-scroll"><div class="group-panel"><b style="font-size:13px">群成员（${groupCount()}）</b><div class="members">${members.map(a=>`<button class="member-tap" onclick="openPerson('${encodeURIComponent(a)}')">${personAvatar(a)}<span class="member-name">${clean(groupMemberLabel(a))}</span></button>`).join('')}</div></div><button class="menu-row" onclick="openAnnouncement()">群公告　›</button></div>`;
+   view.innerHTML=`${header('聊天信息','chat')}<div class="scroll members-scroll"><div class="group-panel"><b style="font-size:13px">群成员（${groupCount()}）</b><div class="members">${members.map(a=>`<button class="member-tap" onclick="openPerson('${encodeURIComponent(a)}')">${personAvatar(a)}<span class="member-name">${clean(groupMemberLabel(a))}</span></button>`).join('')}</div><p class="rr-group-test-note">昵称中的房间号会在正式版中去除</p></div><button class="menu-row" onclick="openAnnouncement()">群公告　›</button></div>`;
    if(!state.checked){state.checked=true;state.stress+=7;if(typeof nightRecordEvidence==='function')nightRecordEvidence('group');store()}
    return;
  }
@@ -571,7 +573,7 @@ function render(){
            ? `<button class="profile-row rr-edit-remark" onclick="editContactRemark()"><strong>我的备注</strong><span class="preview">${clean(person.display)}</span><span class="chevron">›</span></button><div class="profile-row rr-ident-row"><strong>微信号</strong><span class="preview">${clean(person.wechatId)}</span></div>`
            : ''))+
       `<div class="profile-row profile-signature"><strong>个性签名</strong><span class="preview">${clean(person.bio||'暂无')}</span></div>`;
-   view.innerHTML=`${header('个人信息','wechat')}<div class="scroll profile-view"><div class="profile-card"><div class="profile-avatar">${noData?`<span class="avatar lg" style="background:#050505"></span>`:personAvatar(person.key,'lg')}</div><div><h2>${clean(noData?'物业通知':state.personSource==='group'?(person.groupNickname||person.originalId):(person.friend?person.display:person.originalId))}</h2><p>${noData?'资料获取失败':isSelf?'我的微信':person.friend?'微信好友':'微信用户'}</p>${state.personSource==='group'&&person.key==='王雨桐'?'<p>锦苑花庭三栋 · 301室</p>':''}</div></div><div class="profile-section">${metaRows}<button class="profile-row ${person.friend&&!noData?'':'locked'}" onclick="openPersonMoments()"><strong>朋友圈</strong><span class="preview">${noData?'暂时无法查看':person.friend?clean(person.moment||'暂无新动态'):'仅好友可见'}</span><span class="chevron">›</span></button><div class="profile-row"><strong>更多信息</strong><span class="preview">${noData?'资料暂不可用':person.friend?'已添加至通讯录':'尚未添加为好友'}</span></div></div>${noData?'<p class="profile-note">未能获取此账号的个人信息。</p>':isSelf?'<p class="profile-note">这是你的微信资料。</p>':person.friend?`<button class="profile-action" onclick="openDirect('${encodeURIComponent(state.person)}')">发消息</button>`:`<button class="profile-action secondary" onclick="sendFriendRequest()">添加到通讯录</button>`}</div>`;
+   view.innerHTML=`${header('个人信息','wechat')}<div class="scroll profile-view"><div class="profile-card"><div class="profile-avatar">${noData?`<span class="avatar lg" style="background:#050505"></span>`:personAvatar(person.key,'lg')}</div><div><h2>${clean(noData?'':state.personSource==='group'?(person.groupNickname||person.originalId):(person.friend?person.display:person.originalId))}</h2><p>${noData?'资料获取失败':isSelf?'我的微信':person.friend?'微信好友':'微信用户'}</p>${state.personSource==='group'&&person.key==='王雨桐'?'<p>锦苑花庭三栋 · 301室</p>':''}</div></div><div class="profile-section">${metaRows}<button class="profile-row ${person.friend&&!noData?'':'locked'}" onclick="openPersonMoments()"><strong>朋友圈</strong><span class="preview">${noData?'暂时无法查看':person.friend?clean(person.moment||'暂无新动态'):'仅好友可见'}</span><span class="chevron">›</span></button><div class="profile-row"><strong>更多信息</strong><span class="preview">${noData?'资料暂不可用':person.friend?'已添加至通讯录':'尚未添加为好友'}</span></div></div>${noData?'<p class="profile-note">未能获取此账号的个人信息。</p>':isSelf?'<p class="profile-note">这是你的微信资料。</p>':person.friend?`<button class="profile-action" onclick="openDirect('${encodeURIComponent(state.person)}')">发消息</button>`:`<button class="profile-action secondary" onclick="sendFriendRequest()">添加到通讯录</button>`}</div>`;
    return;
  }
  if(state.page==='contact-moments'){
@@ -623,7 +625,7 @@ function msg(name,body,cls,mine=false){
   // All chat-avatar taps share the same WeChat profile & moments permissions as contacts.
   const personName=mine?'我':name;
   const iconHtml=personAvatar(personName);
-  return `<div class="msg-row ${mine?'mine':''}"><button type="button" class="avatar-tap msg-avatar-btn" onclick="openPerson('${encodeURIComponent(personName)}')" aria-label="查看${clean(personName)}的资料">${iconHtml}</button><div class="msg-bubble-wrap">${mine||state.page!=='chat'?'':`<div class="msg-name">${clean(groupMemberLabel(name))}</div>`}<div class="msg-bubble">${clean(body)}</div></div></div>`;
+  return `<div class="msg-row ${mine?'mine':''}"><button type="button" class="avatar-tap msg-avatar-btn" onclick="openPerson('${encodeURIComponent(personName)}')" aria-label="查看${personKey(personName)==='物业通知'?'匿名发言者':clean(personName)}的资料">${iconHtml}</button><div class="msg-bubble-wrap">${mine||state.page!=='chat'||personKey(name)==='物业通知'?'':`<div class="msg-name">${clean(groupMemberLabel(name))}</div>`}<div class="msg-bubble">${clean(body)}</div></div></div>`;
 }
 function chooseAvatar(i){
  state.avatar=i;store();

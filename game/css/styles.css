@@ -711,3 +711,7 @@ body[data-theme="dark"] .rr-anon-center button{background:#49414a;color:#f7ecf3;
 .rr-sms-sender{display:flex;align-items:center;gap:12px;}.rr-sms-sender div{display:flex;flex-direction:column;gap:4px;}.rr-sms-sender small{color:#999;font-size:12px;}.rr-sms-bubble{border-radius:10px;background:#69bb83;color:white;padding:10px;font-size:20px;}.rr-sms-card p{color:#666;line-height:1.8;font-size:13px;}
 /* Remove the empty band beneath avatars after deleting placeholder labels. */
 .avatar-choice{gap:2px!important;padding-bottom:7px!important;}
+
+/* Demo note below the resident member list. */
+.rr-group-test-note{margin:8px 0 12px;text-align:center;color:#96969b;font-size:10px;line-height:1.6;}
+body[data-theme="dark"] .rr-group-test-note{color:#a4a4ae;}
