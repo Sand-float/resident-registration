@@ -158,7 +158,7 @@ function nightConfirmPlate(){
  if(typeof SoundFX!=='undefined')SoundFX.play('shutter');
  const pic=document.querySelector('.rr-cg-visual');if(pic){pic.classList.add('photo-hold');}
  const btn=document.querySelector('.rr-cg-next');if(btn){btn.disabled=true;btn.textContent='照片已保存';}
- setTimeout(()=>{state.platePhotoPending=false;state.nightPlateChecked=true;store();if(state.page==='night-plate')go('repairs')},1500);
+ setTimeout(()=>{state.platePhotoPending=false;state.nightPlateChecked=true;store();if(state.page==='night-plate')goBack()},1500);
 }
 function nightRepairCategory(name){state.nightRepairCategory=name;store();render();}
 function nightSubmitRepair(type){
@@ -202,8 +202,8 @@ function nightAdvanceDanger(){
 }
 // CG 死亡过渡：视野变暗 → 短暂信号杂讯 → 已销户身份页 → 自动进入结局。
 // 阶段推进在页面隐藏时暂停，避免返回浏览器后补放过期音效。
-// 变暗动画约 1 秒，字幕显示完整 2.6 秒；杂讯只是一瞬；异常档案参照《异常封校》黑屏自动过渡时长 3.6 秒。
-const NIGHT_DEATH_PHASE_MS={fade:2600,static:420,record:3600};
+// 变暗动画约 1 秒，字幕显示完整 2.6 秒；杂讯只是一瞬；异常档案停留 3.7 秒（在上一版本的 3.6 秒基础上增加 0.1 秒）。
+const NIGHT_DEATH_PHASE_MS={fade:2600,static:420,record:3700};
 let nightDeathTimer=null,nightDeathStarted=0,nightDeathRemaining=0;
 function nightClearDeathTimer(){if(nightDeathTimer){clearTimeout(nightDeathTimer);nightDeathTimer=null}}
 function nightDeathSchedule(){

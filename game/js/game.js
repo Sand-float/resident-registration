@@ -447,14 +447,14 @@ function visibleMoments(){
   return {name,text:post};
  }).filter(x=>x.name&&x.text&&getPerson(x.name).friend);
 }
-const RR_SCENE_ASSETS=['game/assets/plate_loose.webp','game/assets/foyer_closed.webp','game/assets/foyer_ajar.webp','game/assets/boxes.svg','game/assets/door.svg','game/assets/meal.svg',...['风景','猫咪','客厅','卧室'].map(n=>'game/assets/gallery/'+n+'.webp')];
+const RR_SCENE_ASSETS=['game/assets/plate_loose.webp','game/assets/foyer_closed.webp','game/assets/foyer_ajar.webp','game/assets/boxes.svg','game/assets/door.svg','game/assets/meal.svg','game/assets/gallery/猫咪.jpg'];
 const rrSceneCache=[];
 function rrPreloadScenes(){for(const src of RR_SCENE_ASSETS){const img=new Image();img.decoding='async';img.src=src;img.decode?.().catch(()=>{});rrSceneCache.push(img)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rrPreloadScenes,{once:true});else rrPreloadScenes();
-const RR_GALLERY_BASE=['风景','猫咪','客厅','卧室'];
-function rrGalleryItems(){const out=RR_GALLERY_BASE.map(n=>({name:n,src:'game/assets/gallery/'+n+'.webp'}));
+const RR_GALLERY_BASE=['猫咪'];
+function rrGalleryItems(){const out=RR_GALLERY_BASE.map(n=>({name:n,src:'game/assets/gallery/'+n+'.jpg'}));
  if(state.nightPlateChecked)out.push({name:'302门牌',src:'game/assets/plate_loose.webp'});
- if(state.repairScreenshotSaved&&state.nightRepairStatus==='fixed')out.push({name:'维修工单',src:'game/assets/gallery/工单截图.webp'});
+ if(state.repairScreenshotSaved&&state.nightRepairStatus==='fixed')out.push({name:'维修工单',src:'game/assets/gallery/工单截图.png'});
  return out;
 }
 function render(){
