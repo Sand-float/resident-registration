@@ -11,7 +11,7 @@ const RR_NODES=[
  {id:'status-discovery',name:'发现新应用',tag:'手机桌面 · 异常',desc:'发现那款从未安装过的应用。',page:'home',ready:s=>s.dayOneUnlocked&&!s.dayOneBodySeen},
  {id:'investigate',name:'决定询问',tag:'身体状态 · 分岔',desc:'看完身体数据后选择如何回应。',page:'day1-choose',ready:s=>s.dayOneBodySeen&&!s.dayOneChoice},
  {id:'group-alert',name:'群内追问',tag:'危险支线',desc:'在群里向小林提出敏感问题。',page:'chat',ready:s=>s.dayOneChoice==='group'&&s.dayOneInquiryStep===2&&!s.nightChoice},
- {id:'group-ending',name:'公开追问',tag:'BE 03',desc:'群聊里的追问导致的结局。',page:'night-ending',ready:s=>s.storyEnding==='day1-group-death'},
+ {id:'group-ending',name:'公开追问',tag:'BE 01',desc:'群聊里的追问导致的结局。',page:'night-ending',ready:s=>s.storyEnding==='day1-group-death'},
  {id:'neighbor-ask',name:'询问王雨桐',tag:'邻居支线',desc:'向隔壁邻居确认自己的疑惑。',page:'neighbor',ready:s=>s.dayOneChoice==='neighbor'&&s.dayOneInquiryStep===2&&!s.nightChoice},
  {id:'no-ask',name:'暂时不问',tag:'沉默支线',desc:'先不问别人，做自己的事。',page:'home',ready:s=>s.dayOneChoice==='none'&&s.dayOneAsked&&!s.nightChoice},
  {id:'chores',name:'完成待办',tag:'家务 · 自由行动',desc:'整理纸箱、检查门窗、吃点东西。',page:'notes',ready:s=>s.dayOneAsked&&s.dayOneChoice!=='group'&&!Object.values(s.dayOneTasks||{}).some(Boolean)},
@@ -22,7 +22,7 @@ const RR_NODES=[
  {id:'late-screen',name:'继续看手机',tag:'手机调查',desc:'放下睡意，继续检查手机。',page:'home',ready:s=>s.nightChoice==='browse'&&s.nightPhase==='waiting'},
  {id:'lin-withdraw',name:'看小林消息',tag:'微信 · 限时事件',desc:'收到后又被撤回的私信。',page:'direct-chat',ready:s=>s.nightChoice==='browse'&&s.nightLinMessage===2},
  {id:'late-misread',name:'错误报修',tag:'手机调查 · 危险分岔',desc:'按普通维修理解小林的暗示。',page:'night-danger',ready:s=>s.nightChoice==='misread'&&!s.storyEnding},
- {id:'late-misread-end',name:'门外脚步',tag:'BE 02 · 错误路线',desc:'门牌仍在核对名单上。',page:'night-ending',ready:s=>s.nightChoice==='misread'&&s.storyEnding==='day1-sleep-death'},
+ {id:'late-misread-end',name:'门外脚步',tag:'BE 01 · 分支',desc:'门牌仍在核对名单上。',page:'night-ending',ready:s=>s.nightChoice==='misread'&&s.storyEnding==='day1-sleep-death'},
  {id:'repair',name:'提交报修',tag:'物业服务 · 操作',desc:'查看门牌并留下报修记录。',page:'repairs',ready:s=>['accepted','fixed'].includes(s.nightRepairStatus)&&!s.storyEnding},
  {id:'quiet-night',name:'放下手机',tag:'深夜 · 危险',desc:'没有维修门牌。',page:'night-danger',ready:s=>s.nightChoice==='ignored'&&!s.storyEnding},
  {id:'repair-fixed',name:'门牌修好',tag:'物业维修',desc:'听见工具声后，确认维修结束。',page:'night-after-repair',ready:s=>s.nightRepairStatus==='fixed'&&!s.storyEnding},
@@ -30,16 +30,15 @@ const RR_NODES=[
  {id:'first-night',name:'第一夜幸存',tag:'Day 1 · 生还',desc:'门外的人略过了 302 室。',page:'day-end',ready:s=>s.storyEnding==='day1-survivor'}
 ];
 const RR_ENDINGS=[
- {id:'day1-survivor',name:'第一夜 · 幸存',kind:'survival',chapter:1,summary:'你读到小林撤回的消息，查看门牌并报修。维修工到场，重新固定了 302 的门牌。这一夜，你活了下来。'},
- {id:'day1-no-repair-death',name:'BE 01 · 未修门牌',kind:'bad',chapter:1,summary:'302 的门牌尚未修好。夜里，脚步停在门口，门锁转动，房门被打开。'},
- {id:'day1-group-death',name:'BE 03 · 公开追问',kind:'bad',chapter:1,summary:'你在群里公开追问。夜里，脚步停在 302 室门前，房门被打开。'},
- {id:'day1-sleep-death',name:'BE 02 · 错误报修',kind:'bad',chapter:1,summary:'错误的报修事项没有让门牌得到维修。第一夜，门外来者推开了 302 的门。'}
+ {id:'day1-survivor',name:'第一夜 · 幸存',kind:'survival',chapter:1,summary:'门牌重新固定在 302 门外。你活过了第一夜。'},
+ {id:'day1-no-repair-death',name:'BE 01 · 亚伯',kind:'bad',chapter:1,summary:'「我岂是看守我兄弟的吗？」'}
 ];
+function rrEndingKey(id){return ['day1-no-repair-death','day1-sleep-death','day1-group-death'].includes(id)?'day1-no-repair-death':id;}
 function rrDefaultArchive(){return {version:RR_ARCHIVE_VERSION,nodes:{},branches:{},endings:{}}}
 function rrReadArchive(){
  try{
   const data=JSON.parse(localStorage.getItem(RR_ARCHIVE_KEY)||'null');
-  if(data&&typeof data==='object')return {...rrDefaultArchive(),...data,nodes:data.nodes||{},branches:data.branches||{},endings:data.endings||{}};
+  if(data&&typeof data==='object'){const saved=data.endings||{};if(saved['day1-sleep-death']||saved['day1-group-death'])saved['day1-no-repair-death']=saved['day1-no-repair-death']||saved['day1-sleep-death']||saved['day1-group-death'];return {...rrDefaultArchive(),...data,nodes:data.nodes||{},branches:data.branches||{},endings:saved};}
   // Old linear checkpoints were sometimes incorrectly unlocked. Never migrate those;
   // carry over confirmed ending discoveries only.
   const old=JSON.parse(localStorage.getItem('resident_registration_archive_v1')||'null');
@@ -64,7 +63,7 @@ function rememberStoryMilestones(){
   dirty=true;
  }
  if(state.dayOneChoice&&['neighbor','group','none'].includes(state.dayOneChoice)&&!archive.branches[state.dayOneChoice]){archive.branches[state.dayOneChoice]=Date.now();dirty=true}
- if(state.storyEnding&&RR_ENDINGS.some(e=>e.id===state.storyEnding)&&!archive.endings[state.storyEnding]){archive.endings[state.storyEnding]={at:Date.now(),stats:{stamina:state.stamina,clues:state.clues,choice:state.dayOneChoice}};dirty=true}
+ if(state.storyEnding&&RR_ENDINGS.some(e=>e.id===rrEndingKey(state.storyEnding))&&!archive.endings[rrEndingKey(state.storyEnding)]){archive.endings[rrEndingKey(state.storyEnding)]={at:Date.now(),stats:{stamina:state.stamina,clues:state.clues,choice:state.dayOneChoice}};dirty=true}
  if(dirty)rrWriteArchive(archive);
 }
 function rrArchiveOpen(page){
@@ -120,13 +119,13 @@ function rrConfirmRewind(id){
  scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction();
  if(state.page==='chat')markGroupRead();if(state.page==='neighbor')markNeighborRead();
 }
-function rrSaveEnding(id){const archive=rrReadArchive();if(!archive.endings[id]){archive.endings[id]={at:Date.now(),stats:{stamina:state.stamina,clues:state.clues,choice:state.dayOneChoice}};rrWriteArchive(archive)}}
+function rrSaveEnding(id){id=rrEndingKey(id);const archive=rrReadArchive();if(!archive.endings[id]){archive.endings[id]={at:Date.now(),stats:{stamina:state.stamina,clues:state.clues,choice:state.dayOneChoice}};rrWriteArchive(archive)}}
 function rrArchiveHeader(eyebrow,title,subtitle){return `<header class="rr-archive-head"><button class="rr-archive-back" onclick="rrArchiveBack()" aria-label="返回">‹</button><small>${eyebrow}</small><h1>${title}</h1><p>${subtitle}</p></header>`}
 function renderStoryArchivePage(){
  const page=state.page;if(!['story-nodes','story-endings','story-ending-detail'].includes(page))return false;
  if(page==='story-nodes'){
   const archive=rrReadArchive(),unlocked=RR_NODES.filter(n=>archive.nodes[n.id]).length;
-  const branchNode=id=>{const n=RR_NODES.find(item=>item.id===id);if(!n)return '';const available=!!archive.nodes[id];const tag=available?'button':'div';return `<${tag} class="rr-tree-node ${available?'is-unlocked':'is-locked'}" data-node="${id}" ${available?`onclick="rrAskRewind('${id}')" title="点击回溯"`:'aria-disabled="true"'}><strong>${clean(n.name)}</strong></${tag}>`};
+  const branchNode=id=>{const n=RR_NODES.find(item=>item.id===id);if(!n)return '';const available=!!archive.nodes[id];const tag=available?'button':'div';return `<${tag} class="rr-tree-node ${available?'is-unlocked':'is-locked'}" data-node="${id}" ${available?`onclick="rrAskRewind('${id}')" title="点击回溯"`:'aria-disabled="true"'}><strong>${available?clean(n.name):'待解锁'}</strong></${tag}>`};
   // Horizontal time progression (x); choices branch vertically (y).
   const layout={
     'phone':[0,390],'group-reply':[1,390],'neighbor-reply':[2,390],'status-discovery':[3,390],'investigate':[4,390],
@@ -158,6 +157,6 @@ function renderStoryArchivePage(){
   return true;
  }
  const e=RR_ENDINGS.find(item=>item.id===state.endingArchiveId);if(!e||!rrReadArchive().endings[e.id]){state.page='story-endings';return renderStoryArchivePage()}
- view.innerHTML=`<section class="rr-archive"><div class="rr-archive-scroll">${rrArchiveHeader('STORY ARCHIVE · DAY 1',clean(e.name),'已解锁剧情结局')}<div class="rr-ending-detail-ornament">✧</div><div class="rr-ending-detail-copy"><small>第一天 · 分支结果</small><p>${clean(e.summary)}</p><p>你可以返回剧情节点，试试另一种选择。</p></div><button class="rr-archive-foot" onclick="state.page='story-endings';render()">返回结局图鉴 →</button></div></section>`;
+ view.innerHTML=`<section class="rr-archive"><div class="rr-archive-scroll">${rrArchiveHeader('STORY ARCHIVE · DAY 1',clean(e.name),'已解锁剧情结局')}<div class="rr-ending-detail-ornament">✧</div><div class="rr-ending-detail-copy"><small>第一天 · 分支结果</small><p>${clean(e.summary)}</p>${e.kind==='bad'?'':'<p>你可以返回剧情节点，试试另一种选择。</p>'}</div><button class="rr-archive-foot" onclick="state.page='story-endings';render()">返回结局图鉴 →</button></div></section>`;
  return true;
 }

@@ -122,7 +122,11 @@ function dayOneSync(){
  if(!state.dayOneTasks || typeof state.dayOneTasks!=='object')state.dayOneTasks={};
 }
 function unlockDayOne(){if(!state.dayOneUnlocked){state.dayOneUnlocked=true;state.appRevealPending=true;state.dayOneTasks=state.dayOneTasks||{};store();}if(state.page==='home')render();}
-function dayOneOnNavigate(p){if(p==='body-status' && !state.dayOneBodySeen){state.dayOneBodySeen=true;store();}}
+function dayOneOnNavigate(p){if(p==='body-status' && !state.dayOneBodySeen){
+ state.dayOneBodySeen=true;
+ if(!state.investigation?.body && !state.bodyClueShownOnce){state.bodyClueShownOnce=true;nightRecordEvidence('body');}
+ store();
+}}
 const dayOneAllDone=()=>DAY1_TASKS.every(t=>!!state.dayOneTasks?.[t.id]);
 const dayOneCompleted=()=>DAY1_TASKS.filter(t=>!!state.dayOneTasks?.[t.id]).length;
 function dayOneHomeGuide(){
@@ -149,7 +153,7 @@ function d1Metric(label,num,color,note){
 function renderDayOnePage(){
  const page=state.page;
  if(page==='body-status'){
-  if(!state.dayOneBodySeen){state.dayOneBodySeen=true;store()}if(typeof nightRecordEvidence==='function'&&!state.investigation?.body)nightRecordEvidence('body')
+  if(!state.dayOneBodySeen){state.dayOneBodySeen=true;state.bodyClueShownOnce=true;nightRecordEvidence('body')}else if(!state.investigation?.body){state.investigation=state.investigation||{};state.investigation.body=Date.now();store()}
   view.innerHTML=`${d1Header('身体状态')}<div class="scroll d1-flat-scroll"><div class="d1-eyebrow">个人状态 · Day 1</div><div class="d1-status-identity"><img src="game/assets/status.svg" alt=""/><div><strong>${clean(state.playerId||'新住户')}</strong><small>锦苑花庭 · 302室</small></div></div><div class="d1-status-intro">忙了一整天，身体还在努力适应搬家的节奏。</div>${d1Metric('体力',state.stamina,'#80bba5','整理物品和行动会消耗体力')}${d1Metric('饱腹感',state.satiety,'#dba979','吃东西可以补充饱腹感')}${d1Metric('心情',state.mood,'#bb98c8','今晚发生的事情可能影响心情')}${d1Metric('精神压力',state.stress,'#d48c91','数值越高，压力越大')}<p class="d1-fineprint">以上为游戏角色的虚构状态数值。</p>${(!state.dayOneAsked&&!state.dayOneChoice&&!state.nightChoice)?`<button class="d1-primary" onclick="go('day1-choose')">关于这些数字，要问问谁吗？ →</button><p class="d1-flow-caption">也可以先返回桌面，再决定下一步。</p>`:''}</div></div>`;
   return true;
  }
@@ -161,7 +165,7 @@ function renderDayOnePage(){
  if(page==='day1-task'){
   const t=DAY1_TASKS.find(a=>a.id===state.dayOneTaskId)||DAY1_TASKS[0];
   if(state.dayOneTasks[t.id]){state.dayOneTaskId=t.id;state.page='day1-task-result';return renderDayOnePage()}
-  view.innerHTML=`${d1Header(dayOneTaskTitle(t))}<div class="scroll d1-event"><div class="d1-event-image"><img src="${t.image}" alt="${clean(dayOneTaskTitle(t))}场景插画"/></div><div class="d1-event-copy"><span class="d1-eyebrow">晚间行动</span><h2>${dayOneTaskTitle(t)}</h2><p>${clean(dayOneTaskDesc(t))}</p><div class="d1-effect ${t.costClass}">${clean(t.cost)}</div></div><div class="d1-event-bottom"><button class="d1-primary" onclick="completeDayOneTask('${t.id}')">${t.action}</button><button class="d1-text-action" onclick="goBack()">稍后再做</button></div></div></div>`;
+  view.innerHTML=`${d1Header(dayOneTaskTitle(t))}<div class="scroll d1-event"><div class="d1-event-image"><img src="${t.image}" alt="${clean(dayOneTaskTitle(t))}场景插画" loading="eager" decoding="sync" fetchpriority="high"/></div><div class="d1-event-copy"><span class="d1-eyebrow">晚间行动</span><h2>${dayOneTaskTitle(t)}</h2><p>${clean(dayOneTaskDesc(t))}</p><div class="d1-effect ${t.costClass}">${clean(t.cost)}</div></div><div class="d1-event-bottom"><button class="d1-primary" onclick="completeDayOneTask('${t.id}')">${t.action}</button><button class="d1-text-action" onclick="goBack()">稍后再做</button></div></div></div>`;
   return true;
  }
  if(page==='day1-task-result'){

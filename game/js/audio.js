@@ -24,12 +24,12 @@ const SoundFX=(()=>{
   if(context.state==='suspended')context.resume().catch(()=>{});
  }
  function stop(){for(const s of [...playing]){try{s.stop(0)}catch(e){} }playing.clear()}
- function play(id){
+ function play(id, volumeMultiplier=1){
   // Do not return a deferred promise that might resume later with a stale sound.
   if(muted||!visible||document.hidden||!buffers.has(id)||!context||context.state!=='running')return;
   const now=performance.now();if(now-(last[id]||-10000)<170)return;last[id]=now;
   const src=context.createBufferSource(),gain=context.createGain();
-  src.buffer=buffers.get(id);gain.gain.value=volume[id]??.3;
+  src.buffer=buffers.get(id);gain.gain.value=(volume[id]??.3)*Math.max(0,Math.min(1,volumeMultiplier));
   src.connect(gain);gain.connect(context.destination);playing.add(src);
   src.onended=()=>{playing.delete(src);src.disconnect();gain.disconnect()};
   try{src.start(0)}catch(e){playing.delete(src)}

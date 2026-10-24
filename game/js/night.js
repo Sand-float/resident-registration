@@ -54,7 +54,7 @@ function nightNoticeArrives(){
  if(state.page==='home'||state.page==='wechat'||state.page==='direct-chat')render();
 }
 // 按实际停留在小林私聊页面的累计时长计算撤回；离开页面和切后台均暂停。
-const NIGHT_LIN_VIEW_MS=10600; // 较上一版 11500 ms 仅缩短 0.9 秒
+const NIGHT_LIN_VIEW_MS=5300; // 调整为上一版时长的 1/2
 function nightLinWatching(){return state.page==='direct-chat'&&state.dmPerson==='小林'&&!document.hidden&&state.nightChoice==='browse'&&state.nightLinMessage===1&&!state.storyEnding}
 function nightPauseLinView(){
  if(nightTimers.retract){clearTimeout(nightTimers.retract);delete nightTimers.retract}
@@ -96,6 +96,7 @@ function nightRepairProcess(){
  if(state.page!=='repairs')banner('【报修进度】门牌标识 · 已受理，等待维修','物业服务','repairs');
 }
 function scheduleNightEvents(){
+ if(state.nightLinActiveSince&&!nightLinWatching())nightPauseLinView();
  if(state.storyEnding||state.nightChoice!=='browse'){nightCancelTimers();return}
  if(state.nightPhase==='waiting')nightSchedule('issue',Number(state.nightStep)||Date.now()+2100,nightNoticeArrives);
  if(nightLinWatching()&&state.nightLinActiveSince)nightSchedule('retract',Date.now()+Math.max(0,NIGHT_LIN_VIEW_MS-(Number(state.nightLinViewedMs)||0)-(Date.now()-Number(state.nightLinActiveSince))),nightRetractMessage);
@@ -168,7 +169,7 @@ function nightSubmitRepair(type){
 }
 function nightBeginMisread(reason){
  if(state.nightChoice!=='browse'||state.nightRepairStatus)return;
- if(typeof SoundFX!=='undefined')SoundFX.play('anomaly');
+ if(typeof SoundFX!=='undefined')SoundFX.play('anomaly',0.42);
  state.nightMistake=reason||'wait';
  state.nightChoice='misread';state.nightStep=0;
  store();nightSceneSound('danger',0);go('night-danger');
@@ -181,7 +182,7 @@ function nightContinueDoor(){
  if(state.nightChoice!=='browse'||!['accepted','fixed'].includes(state.nightRepairStatus))return;
  state.nightDoorStep=Math.min(4,Number(state.nightDoorStep||1)+1);
  if(state.nightDoorStep===3){state.nightRepairStatus='fixed';}
- if(state.nightDoorStep>=4){if(state.nightRepairStatus!=='fixed')return;if(typeof SoundFX!=='undefined')SoundFX.stop();state.page='night-after-repair';store();render();return}
+ if(state.nightDoorStep>=4){if(state.nightRepairStatus!=='fixed')return;state.repairScreenshotSaved=true;if(typeof SoundFX!=='undefined')SoundFX.stop();state.page='night-after-repair';store();render();return}
  store();nightSceneSound('repair',state.nightDoorStep);render();
 }
 function nightBody(title,content,actions,eyebrow='锦苑花庭'){
@@ -196,10 +197,52 @@ function beginNightDanger(kind){
 function nightAdvanceDanger(){
  if(!['sleep','group','misread','ignored'].includes(state.nightChoice)||state.storyEnding)return;
  state.nightStep=Math.min(4,(Number(state.nightStep)||0)+1);
- if(state.nightStep>=4){nightSetEnding(state.nightChoice==='misread'?'day1-sleep-death':state.nightChoice==='group'?'day1-group-death':'day1-no-repair-death');return}
+ if(state.nightStep>=4){nightBeginDeathTransition();return}
  store();nightSceneSound('danger',state.nightStep);render();
 }
+// CG 死亡过渡：视野变暗 → 短暂信号杂讯 → 已销户身份页 → 自动进入结局。
+// 阶段推进在页面隐藏时暂停，避免返回浏览器后补放过期音效。
+// 变暗动画约 1 秒，字幕显示完整 2.6 秒；杂讯只是一瞬；异常档案参照《异常封校》黑屏自动过渡时长 3.6 秒。
+const NIGHT_DEATH_PHASE_MS={fade:2600,static:420,record:3600};
+let nightDeathTimer=null,nightDeathStarted=0,nightDeathRemaining=0;
+function nightClearDeathTimer(){if(nightDeathTimer){clearTimeout(nightDeathTimer);nightDeathTimer=null}}
+function nightDeathSchedule(){
+ if(state.page!=='night-death-transition'||!state.nightDeathPhase||document.hidden||nightDeathTimer)return;
+ const phase=state.nightDeathPhase;
+ const ms=nightDeathRemaining>0?nightDeathRemaining:NIGHT_DEATH_PHASE_MS[phase];
+ nightDeathRemaining=ms;nightDeathStarted=Date.now();
+ nightDeathTimer=setTimeout(()=>{
+  nightDeathTimer=null;nightDeathRemaining=0;nightDeathStarted=0;
+  if(state.page!=='night-death-transition'||state.nightDeathPhase!==phase)return;
+  if(phase==='fade'){
+   state.nightDeathPhase='static';
+   if(typeof SoundFX!=='undefined')SoundFX.play('anomaly',0.42);
+  }else if(phase==='static'){
+   if(typeof SoundFX!=='undefined')SoundFX.stop();
+   state.nightDeathPhase='record';
+  }else if(phase==='record'){
+   state.nightDeathPhase='';
+   nightSetEnding(state.nightChoice==='misread'?'day1-sleep-death':state.nightChoice==='group'?'day1-group-death':'day1-no-repair-death');
+   return;
+  }
+  store();render();nightDeathSchedule();
+ },ms);
+}
+function nightBeginDeathTransition(){
+ if(state.storyEnding||state.nightDeathPhase||!['sleep','group','misread','ignored'].includes(state.nightChoice))return;
+ nightCancelTimers();
+ if(typeof SoundFX!=='undefined')SoundFX.stop();
+ state.nightDeathPhase='fade';state.nightStep=4;state.page='night-death-transition';state.navStack=[];
+ nightDeathRemaining=0;store();render();nightDeathSchedule();
+}
+document.addEventListener('visibilitychange',()=>{
+ if(state.page!=='night-death-transition')return;
+ if(document.hidden){
+  if(nightDeathTimer){nightDeathRemaining=Math.max(1,nightDeathRemaining-(Date.now()-nightDeathStarted));nightClearDeathTimer()}
+ }else nightDeathSchedule();
+});
 function nightSetEnding(id){
+ nightClearDeathTimer();nightDeathRemaining=0;state.nightDeathPhase='';
  if(state.storyEnding)return;
  nightCancelTimers();if(typeof SoundFX!=='undefined')SoundFX.stop();state.storyEnding=id;state.nightStep=4;state.dayOneFinished=true;
  state.page=id==='day1-survivor'?'day-end':'night-ending';state.navStack=[];
@@ -229,11 +272,26 @@ function renderNightPage(){
    ['楼道里有脚步声。<br>由远及近，越来越清楚。','仔细听','still'],
    ['脚步声停在门外。<br>没有门铃，也没有人说话。','继续','still'],
    ['门锁转动了一下。','看向房门','still'],
-   ['门被推开了一条缝。<br>外面是一片漆黑。','查看结局','still']
+   ['门被推开了一条缝。<br>外面是一片漆黑。','继续','still']
   ];
   const [copy,action,animation]=lines[step];
-  view.innerHTML=rrCG(step===3?'ajar':'closed',step===0?'深夜 · 302 室':'302 室 · 玄关',copy,'nightAdvanceDanger()',action,animation);
+  view.innerHTML=step===3
+   ? `<section class="rr-cg-scene rr-cg-last"><div class="rr-cg-visual"><img src="game/assets/foyer_ajar.webp" alt="房门被打开一条缝，门外漆黑" loading="eager" decoding="sync"></div><div class="rr-cg-vignette"></div><div class="rr-cg-panel"><small>302 室 · 玄关</small><p>${copy}</p></div><button class="rr-cg-tap" type="button" onclick="nightBeginDeathTransition()" aria-label="继续"><span>轻触继续 ›</span></button></section>`
+   : rrCG('closed',step===0?'深夜 · 302 室':'302 室 · 玄关',copy,'nightAdvanceDanger()',action,animation);
   return true;
+ }
+ if(state.page==='night-death-transition'){
+  const phase=state.nightDeathPhase||'fade';
+  if(phase==='fade'){
+   view.innerHTML=`<section class="rr-death-fade" aria-label="视野渐暗"><img src="game/assets/foyer_ajar.webp" alt=""><div class="rr-death-darkness"></div><p>眼前渐渐暗了下去。<br>意识也开始模糊。</p></section>`;
+  }else if(phase==='static'){
+   view.innerHTML=`<section class="rr-death-static" aria-label="信号中断"><div class="rr-death-noise"></div><div class="rr-death-scanlines"></div><span>信号异常</span></section>`;
+  }else{
+   // 使用真实「物业服务 → 住户登记 → 我的住户资料」同款页面，而不是另建恐怖系统 UI。
+   // 原本房屋、入住日期不变；身份、认证、门牌状态悄悄发生不对劲的变化。
+   view.innerHTML=`<div class="screen app-white rr-death-residence" aria-label="异常的住户资料"><header class="app-header"><span class="icon-btn rr-death-back" aria-hidden="true">‹</span><h2>住户登记</h2><span class="right-space"></span></header><div class="scroll"><div class="doc-section"><h2 class="doc-title">我的住户资料</h2><div class="info-row"><span>房屋</span><span>3栋302室</span></div><div class="info-row"><span>身份</span><span class="rr-residence-anomaly">已销户</span></div><div class="info-row"><span>认证</span><span class="rr-residence-anomaly">已注销</span></div><div class="info-row"><span>入住日期</span><span>10月20日</span></div><div class="info-row"><span>门牌状态</span><span class="rr-residence-anomaly">异常 · 登记失效</span></div></div></div></div>`;
+  }
+  nightDeathSchedule();return true;
  }
  if(state.page==='night-door'){
   const step=Math.min(3,Math.max(1,Number(state.nightDoorStep)||1));
@@ -247,12 +305,12 @@ function renderNightPage(){
   return true;
  }
  if(state.page==='night-after-repair'){
-  view.innerHTML=nightBody('可以休息了',`<p>门外已经安静下来，维修单也显示「已完成维修」。</p><p>你保存了工单截图。忙碌了一整天，困意渐渐涌上来。</p>`,`<button class="night-primary" onclick="nightSetEnding('day1-survivor')">关灯睡觉</button>`,'睡前');return true;
+  view.innerHTML=nightBody('可以休息了',`<p>门外已经安静下来，维修单也显示「已完成维修」。</p><p>你保存了已完成维修的工单截图。<br><small class="rr-gallery-save-hint">可在相册内查看</small><br>忙碌了一整天，困意渐渐涌上来。</p>`,`<button class="night-primary" onclick="nightSetEnding('day1-survivor')">关灯睡觉</button>`,'睡前');return true;
  }
  if(state.page==='night-ending'){
   const ending=state.storyEnding;
-  const title=ending==='day1-group-death'?'BE 03 · 公开追问':ending==='day1-sleep-death'?'BE 02 · 错误报修':'BE 01 · 第一夜';
-  const copy=ending==='day1-group-death'?'<p>那次公开的追问没有得到回答。</p><p>夜里，门外的脚步停下，门锁转动，门被打开。</p>':ending==='day1-sleep-death'?'<p>报修单提交了，但没有人来修门牌。</p><p>脚步在门口停住。房门被推开。</p>':'<p>302 的门牌还没修好。</p><p>脚步停在门外，随后门锁转动，门被推开。</p>';
+  const title='BE 01 · 亚伯';
+   const copy='<p class="rr-abel-quote">「我岂是看守我兄弟的吗？」</p>';
   view.innerHTML=nightBody(title,copy,`<button class="night-primary" onclick="openStoryNodes()">剧情回溯</button><button onclick="openEndingArchive()">查看结局图鉴</button><button onclick="returnDayOneTitle()">返回标题</button>`,'DAY 1 · 失败结局');return true;
  }
  return false;

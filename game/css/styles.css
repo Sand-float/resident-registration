@@ -693,3 +693,21 @@ body[data-theme=dark] .rr-anon-action{background:#24262d}body[data-theme=dark] .
 body[data-theme="dark"] .rr-anon-center button{background:#49414a;color:#f7ecf3;border-color:#796878}
 
 .rr-creator-credit{margin-top:9px;font-size:9px;letter-spacing:.08em;color:#e5d6dc;opacity:.75;text-align:center;font-weight:400;}
+
+/* v10: interactive photos, friend search, and genuine unread/search entry */
+.rr-image-gallery{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:10px 14px 32px;}
+.rr-photo-thumb{position:relative;overflow:hidden;display:flex;flex-direction:column;min-height:158px;background:#f6eef0;border:1px solid #ead9df;border-radius:13px;padding:0!important;text-align:left;color:#655966;}
+.rr-photo-thumb img{height:137px;width:100%;object-fit:cover;display:block;aspect-ratio:1.32;background:#eedfe3;}
+.rr-photo-thumb span{padding:7px 12px;font-size:12px;}
+.rr-photo-full{display:flex;flex-direction:column;align-items:center;gap:13px;padding:20px 12px 28px;overflow:auto;height:calc(100% - 58px);background:#f6f0f2;}
+.rr-photo-full img{width:100%;height:auto;max-height:80%;object-fit:contain;border-radius:7px;box-shadow:0 5px 22px #4f3b4e24;background:#eee0e0;}
+.rr-photo-full small{color:#8e7e85;}.rr-gallery-save-hint{color:#9c8193;font-size:.77em;}
+.rr-search-trigger{display:block;width:calc(100% - 24px);margin:10px 12px;text-align:left;border:none;font:inherit;color:#999;background:#f1f1f2;cursor:pointer;}
+.rr-add-friend{padding:20px 15px;}.rr-add-hint{font-size:13px;color:#877e85;margin:8px 0 15px;}
+.rr-add-search{display:flex;align-items:stretch;gap:7px;}.rr-add-search input{flex:1;min-width:0;border:1px solid #e1d9dd;background:white;border-radius:10px;padding:12px;color:#333;font-size:15px;}
+.rr-add-search button{border:0;background:#86ad90;color:white;padding:0 15px;border-radius:9px;}.rr-add-info{margin-top:26px;font-size:11px;color:#999;line-height:1.8;}
+.rr-friend-found{display:flex;gap:15px;align-items:center;background:white;margin:20px 0;padding:13px;border-radius:12px;}.rr-friend-found div{display:flex;flex-direction:column;gap:7px;}.rr-friend-found small{font-size:11px;color:#888;}
+.rr-sms-card{padding:16px;margin:12px 15px;background:white;border-radius:16px;box-shadow:0 2px 11px #00000009;}
+.rr-sms-sender{display:flex;align-items:center;gap:12px;}.rr-sms-sender div{display:flex;flex-direction:column;gap:4px;}.rr-sms-sender small{color:#999;font-size:12px;}.rr-sms-bubble{border-radius:10px;background:#69bb83;color:white;padding:10px;font-size:20px;}.rr-sms-card p{color:#666;line-height:1.8;font-size:13px;}
+/* Remove the empty band beneath avatars after deleting placeholder labels. */
+.avatar-choice{gap:2px!important;padding-bottom:7px!important;}

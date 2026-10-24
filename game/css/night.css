@@ -64,3 +64,37 @@
 /* Ver. 4: remove all simulated zoom/shake per the revised scene direction. */
 .rr-cg-visual img,.rr-cg-visual.approach img,.rr-cg-visual.tremble img,.rr-cg-visual.reveal img{animation:none!important;transform:none!important;}
 .rr-cg-visual.photo-hold img{animation:none!important;transform:none!important;}
+
+/* 11: Death transition. Only on an unrepaired/dangerous route. */
+.rr-cg-last .rr-cg-panel{bottom:42px;pointer-events:none}
+.rr-cg-tap{position:absolute;z-index:4;inset:0;width:100%;background:transparent;border:0;color:#f4ecf0;text-align:right;display:flex;align-items:flex-end;justify-content:flex-end;padding:0 24px max(49px,env(safe-area-inset-bottom));font-size:12px;letter-spacing:.16em}
+.rr-cg-tap span{opacity:.86;text-shadow:0 1px 7px #090b12}
+.rr-cg-tap:active span{opacity:1}
+/* 第 12 版：保留读字幕时间，干扰只是一瞬，身份页复用原有物业 UI。 */
+.rr-death-fade,.rr-death-static{position:absolute;inset:0;overflow:hidden;color:#f3f0f1}
+.rr-death-fade{background:#020205}
+.rr-death-fade img{display:block;width:100%;height:100%;object-fit:cover}
+.rr-death-darkness{position:absolute;inset:0;background:#020205;animation:rrDeathFade 1.05s ease-in both}
+@keyframes rrDeathFade{0%{opacity:.04}100%{opacity:1}}
+.rr-death-fade p{position:absolute;z-index:1;left:20px;right:20px;top:46%;transform:translateY(-50%);text-align:center;font-size:15px;font-weight:400;line-height:2.05;letter-spacing:.045em;margin:0;text-shadow:0 1px 7px #000;animation:rrDeathWords 1.1s ease-out both}
+@keyframes rrDeathWords{0%{opacity:0}25%{opacity:.7}100%{opacity:1}}
+.rr-death-static{background:#11141c}
+.rr-death-noise{position:absolute;inset:-4%;background-image:url('../assets/signal_noise.png');background-size:240px 240px;image-rendering:auto;opacity:.16;animation:rrDeathNoise .25s steps(2,end) infinite;filter:grayscale(1) contrast(.65)}
+.rr-death-scanlines{position:absolute;inset:0;background:linear-gradient(180deg,#090b12b9,#171b25a6);pointer-events:none}
+.rr-death-static>span{position:absolute;z-index:1;bottom:32%;width:100%;text-align:center;font-size:11px;letter-spacing:.16em;color:#cac4c8}
+@keyframes rrDeathNoise{0%{transform:translate(0,0)}50%{transform:translate(2px,-3px)}100%{transform:translate(-2px,2px)}}
+/* 完全沿用住户登记页面的排版：原有页面的浅色背景、标题、表格行。 */
+.rr-death-residence{position:absolute!important;inset:0;width:100%;height:100%;overflow:hidden;z-index:2;--wash:#f5f5f5;--card:#fff;--ink:#202326;--text2:#94979e;--border:#e7e8eb;--ui-top:#fafafa;background:#f5f5f5!important;color:#202326!important;animation:rrRecordAppear .35s ease-out both}
+.rr-death-residence>.app-header{background:#fafafa!important;border-bottom:1px solid #e5e5e7!important;color:#15171b!important;position:relative}
+.rr-death-residence>.app-header h2{color:#15171b!important}
+.rr-death-residence .rr-death-back{font-size:29px;line-height:1;color:#202326;display:flex;align-items:center;justify-content:flex-start}
+.rr-death-residence>.scroll{background:#f5f5f5!important;color:#202326!important}
+.rr-death-residence .doc-section{background:#fff!important;color:#202326!important;border:1px solid #e5e5e9!important;border-radius:12px}
+.rr-death-residence .doc-title{color:#16191f!important}
+.rr-death-residence .info-row{border-color:#e5e5e9!important;color:#202326!important}
+.rr-death-residence .info-row span:first-child{color:#90949c!important}
+.rr-death-residence .info-row span:last-child{color:#202326!important}
+.rr-death-residence .info-row span.rr-residence-anomaly:last-child{color:#952c3d!important;font-weight:600;letter-spacing:.01em}
+@keyframes rrRecordAppear{from{opacity:.1}to{opacity:1}}
+/* 结局「亚伯」：留白与一句典故，避免重复解释 CG 的死亡过程。 */
+.rr-abel-quote{margin:28px 0 52px!important;text-align:left;font-size:16px;line-height:2.3;letter-spacing:.09em;color:#e6d7dc;font-weight:400;}
