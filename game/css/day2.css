@@ -5,3 +5,30 @@
 .d2-intrusion-banner{position:absolute;z-index:44;top:45px;left:10px;right:10px;display:flex;flex-direction:column;gap:6px;padding:12px 15px;border-radius:12px;background:#281922f5;color:#ffdde5;border:1px solid #c85a7688;box-shadow:0 7px 26px #21050970;pointer-events:none;animation:d2Slide .25s ease-out}.d2-intrusion-banner b{font-size:12px;display:flex;align-items:center;gap:8px}.d2-intrusion-banner>span{font-size:11px;color:#f4b8c5;padding-left:16px}@keyframes d2Slide{from{opacity:0;transform:translateY(-11px)}to{opacity:1;transform:translateY(0)}}.d2-alert-head{padding:23px 4px 15px}.d2-alert-head small{color:var(--text2,#888);font-size:10px;margin-left:9px}.d2-alert-head h2{font-size:21px;line-height:1.5}.d2-alert-head p,.d2-alert-explain{font-size:12px;line-height:1.85;color:var(--text2,#888)}.d2-ticket-card{border:1px solid var(--border,#ddd);border-radius:10px;background:var(--card,#fff);padding:7px 14px}.d2-ticket-card>div{display:flex;justify-content:space-between;gap:15px;border-bottom:1px solid var(--border,#eee);padding:13px 0;font-size:12px}.d2-ticket-card>div:last-child{border:0}.d2-ticket-card span{color:var(--text2,#888)}.d2-ticket-card strong{font-weight:600}.d2-alert-explain{margin-top:19px}
 .d2-result{position:absolute;inset:0;background:#17171d;color:#e9e2e8;overflow-y:auto}.d2-result-inner{padding:95px 25px 32px}.d2-result small{font-size:10px;color:#bba6b2;letter-spacing:.12em}.d2-result h1{font-size:31px;font-weight:400;margin:24px 0 27px}.d2-result p{font-size:13px;line-height:2;color:#c4c0c9;margin:0 0 17px}.d2-result .d2-result-clue{color:#dcc4cd}.d2-beta-finish{border-top:1px solid #47424b;margin:36px 0 25px;padding-top:18px;color:#ba9ea9;font-size:12px;line-height:1.9}.d2-result button{display:block;background:#343039;color:#e7dce5;border:1px solid #66515d;border-radius:7px;width:100%;padding:13px;margin:10px 0;font-size:12px}
 @media(max-width:360px){.d2-scroller{padding:14px 11px 30px}.d2-log-item time{width:60px}.rr-test-gateway p{max-width:265px}}@media(prefers-reduced-motion:reduce){.d2-pulse,.d2-flash-log,.d2-intrusion-banner{animation:none}}
+
+/* 20版：测试入口居中，仅修正入口按钮而不改变标题页的对齐。 */
+.rr-test-gateway .rr-test-actions{width:min(100%,288px);max-width:288px;align-self:center;margin-left:auto;margin-right:auto;display:flex;flex-direction:column;align-items:stretch;gap:10px}
+.rr-test-gateway .rr-test-actions button,.rr-test-gateway .rr-test-actions .chapter-continue{position:static!important;inset:auto!important;margin:0;display:flex;align-items:center;justify-content:space-between;box-sizing:border-box;width:100%;min-height:48px;text-align:left;letter-spacing:.04em;padding:13px 16px!important;background:#ebd9de;color:#423640;border:1px solid #dac9d2;border-radius:8px}
+.rr-test-gateway .rr-test-actions .rr-test-skip{background:#292832;color:#eedee7;border-color:#72616f}
+/* 日间引导、记录、消息的两种主题分别可读。 */
+body[data-theme=light] .d2-home-guide{background:#ffffffca;color:#51444d;border-color:#dbcbd4}
+body[data-theme=light] .d2-home-guide small{color:#826a78}
+body[data-theme=light] .d2-home-guide span{color:#75606e}
+body[data-theme=dark] .d2-home-guide{background:#24222ddd;color:#f1e9ef;border-color:#665662}
+body[data-theme=dark] .d2-home-guide small{color:#c7abb9}
+body[data-theme=dark] .d2-home-guide span{color:#f3d2df}
+body[data-theme=dark] .d2-scroller{background:var(--wash);color:var(--ink)}
+body[data-theme=dark] .d2-warning-strip{background:#3c2630;border-color:#7d4a59;color:#ffd2dc}
+body[data-theme=dark] .d2-flash-log{background:#392930;animation:d2FlashDark .45s ease-out}
+@keyframes d2FlashDark{from{background:#6b3e50}to{background:#392930}}
+body[data-theme=dark] .d2-action-risk{color:#f1acbd;border-color:#8a5668}
+body[data-theme=dark] .d2-chat-thought{color:#bbadbd}
+body[data-theme=dark] .d2-rules-text b{color:#d6aabb}
+body[data-theme=dark] .d2-unsigned{color:#a8aab2}
+body[data-theme=light] .d2-intrusion-banner{color:#fff4f7;background:#5b283b}
+.d2-group-screen{background:var(--rr-head-bg,#f6f6f6)}
+.d2-chat-wait{font-size:11px;color:var(--text2,#999);text-align:center;padding:12px}
+.d2-door-transition{background:#141318;color:#f6ecf1}
+.d2-door-transition .rr-cg-next{background:#e5d2d9;color:#362a33}
+
+.d1-current-stats{font-size:11px;line-height:1.8;color:#8d8390;margin:12px 0 0}body[data-theme=dark] .d1-current-stats{color:#d8c8d4}

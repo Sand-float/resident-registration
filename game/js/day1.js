@@ -154,7 +154,7 @@ function renderDayOnePage(){
  const page=state.page;
  if(page==='body-status'){
   if(!state.dayOneBodySeen){state.dayOneBodySeen=true;state.bodyClueShownOnce=true;nightRecordEvidence('body')}else if(!state.investigation?.body){state.investigation=state.investigation||{};state.investigation.body=Date.now();store()}
-  view.innerHTML=`${d1Header('身体状态')}<div class="scroll d1-flat-scroll"><div class="d1-eyebrow">个人状态 · Day ${state.day}</div><div class="d1-status-identity"><img src="game/assets/status.svg" alt=""/><div><strong>${clean(state.playerId||'新住户')}</strong><small>锦苑花庭 · 302室</small></div></div><div class="d1-status-intro">${state.day===2?'昨晚几乎没睡踏实。早上起来，比想象中更饿。':'忙了一整天，身体还在努力适应搬家的节奏。'}</div>${d1Metric('体力',state.stamina,'#80bba5','整理物品和行动会消耗体力')}${d1Metric('饱腹感',state.satiety,'#dba979','吃东西可以补充饱腹感')}${d1Metric('精神压力',state.stress,'#d48c91','数值越高，压力越大')}<p class="d1-fineprint">以上为游戏角色的虚构状态数值。</p>${(!state.dayOneAsked&&!state.dayOneChoice&&!state.nightChoice)?`<button class="d1-primary" onclick="go('day1-choose')">关于这些数字，要问问谁吗？ →</button><p class="d1-flow-caption">也可以先返回桌面，再决定下一步。</p>`:''}</div></div>`;
+  view.innerHTML=`${d1Header('身体状态')}<div class="scroll d1-flat-scroll"><div class="d1-eyebrow">个人状态 · Day ${state.day}</div><div class="d1-status-identity"><img src="game/assets/status.svg" alt=""/><div><strong>${clean(state.playerId||'新住户')}</strong><small>锦苑花庭 · 302室</small></div></div><div class="d1-status-intro">${state.day===2?'昨晚几乎没睡踏实。早上起来，比想象中更饿。':'忙了一整天，身体还在努力适应搬家的节奏。'}</div>${d1Metric('体力',state.stamina,'#80bba5','整理物品和行动会消耗体力')}${d1Metric('饱腹感',state.satiety,'#dba979','吃东西可以补充饱腹感')}${d1Metric('精神压力',state.stress,'#d48c91','数值越高，压力越大')}<p class="d1-fineprint">以上为游戏角色的虚构状态数值。</p>${(state.day===1&&!state.dayOneAsked&&!state.dayOneChoice&&!state.nightChoice)?`<button class="d1-primary" onclick="go('day1-choose')">关于这些数字，要问问谁吗？ →</button><p class="d1-flow-caption">也可以先返回桌面，再决定下一步。</p>`:''}</div></div>`;
   return true;
  }
  if(page==='notes'&&state.dayOneUnlocked){
@@ -170,7 +170,7 @@ function renderDayOnePage(){
  }
  if(page==='day1-task-result'){
   const t=DAY1_TASKS.find(a=>a.id===state.dayOneTaskId)||DAY1_TASKS[0];
-  view.innerHTML=`${d1Header('待办已完成')}<div class="scroll d1-event"><div class="d1-event-image"><img src="${t.image}" alt=""/></div><div class="d1-event-copy"><span class="d1-eyebrow">已完成 · ${fictionalClock()}</span><h2>${dayOneTaskTitle(t)} <span class="d1-check">✓</span></h2><p>${clean(dayOneTaskResult(t))}</p><div class="d1-effect ${t.costClass}">${clean(t.cost)}</div></div><div class="d1-event-bottom"><button class="d1-primary" onclick="go('notes')">返回待办 →</button></div></div></div>`;
+  view.innerHTML=`${d1Header('待办已完成')}<div class="scroll d1-event"><div class="d1-event-image"><img src="${t.image}" alt=""/></div><div class="d1-event-copy"><span class="d1-eyebrow">已完成 · ${fictionalClock()}</span><h2>${dayOneTaskTitle(t)} <span class="d1-check">✓</span></h2><p>${clean(dayOneTaskResult(t))}</p><div class="d1-effect ${t.costClass}">${clean(t.cost)}</div><p class="d1-current-stats">当前状态：体力 ${dayOneClamp(state.stamina)} / 饱腹感 ${dayOneClamp(state.satiety)} / 精神压力 ${dayOneClamp(state.stress)}</p></div><div class="d1-event-bottom"><button class="d1-primary" onclick="go('notes')">返回待办 →</button></div></div></div>`;
   return true;
  }
  if(page==='day1-choose'){

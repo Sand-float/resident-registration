@@ -97,6 +97,7 @@ function nightRepairProcess(){
  if(state.page!=='repairs')banner('【报修进度】门牌标识 · 已受理，等待维修','物业服务','repairs');
 }
 function scheduleNightEvents(){
+ if(state.day!==1){nightCancelTimers();return}
  if(state.nightLinActiveSince&&!nightLinWatching())nightPauseLinView();
  if(state.storyEnding||state.nightChoice!=='browse'){nightCancelTimers();return}
  if(state.nightPhase==='waiting')nightSchedule('issue',Number(state.nightStep)||Date.now()+2100,nightNoticeArrives);
@@ -105,6 +106,7 @@ function scheduleNightEvents(){
  if(state.nightRepairStatus==='pending'&&state.nightRepairAt)nightSchedule('repair',Number(state.nightRepairAt)+2300,nightRepairProcess);
 }
 function nightOnNavigate(page){
+ if(state.day!==1)return;
  if(state.nightChoice!=='browse'||state.storyEnding)return;
  if(page==='direct-chat'&&state.dmPerson==='小林'&&state.nightLinMessage===1)nightResumeLinView();
 }
@@ -187,7 +189,7 @@ function nightContinueDoor(){
  store();nightSceneSound('repair',state.nightDoorStep);render();
 }
 function nightBody(title,content,actions,eyebrow='锦苑花庭'){
- return `<div class="night-screen"><div class="night-top"><button onclick="goHome()" aria-label="返回桌面">‹</button><span>${['day1-night','night-ending'].includes(state.page)?'':fictionalClock()+' · '}${clean(eyebrow)}</span></div><div class="night-scroll"><span class="night-kicker">THE FIRST NIGHT</span><h1>${clean(title)}</h1><div class="night-copy">${content}</div><div class="night-actions">${actions}</div></div></div>`;
+ return `<div class="night-screen"><div class="night-top"><button onclick="goHome()" aria-label="返回桌面">‹</button><span>${['day1-night','night-ending'].includes(state.page)?'':fictionalClock()+' · '}${clean(eyebrow)}</span></div><div class="night-scroll"><span class="night-kicker">${state.day===2?'THE SECOND DAY':'THE FIRST NIGHT'}</span><h1>${clean(title)}</h1><div class="night-copy">${content}</div><div class="night-actions">${actions}</div></div></div>`;
 }
 function beginNightDanger(kind){
  if(!['group','sleep'].includes(kind))return;
@@ -196,15 +198,15 @@ function beginNightDanger(kind){
  state.nightChoice=kind;state.nightStep=0;state.nightAlertRead=false;store();nightSceneSound('danger',0);go('night-danger');
 }
 function nightAdvanceDanger(){
- if(!['sleep','group','misread','ignored'].includes(state.nightChoice)||state.storyEnding)return;
+ if(!['sleep','group','misread','ignored','day2claim'].includes(state.nightChoice)||state.storyEnding)return;
  state.nightStep=Math.min(4,(Number(state.nightStep)||0)+1);
  if(state.nightStep>=4){nightBeginDeathTransition();return}
  store();nightSceneSound('danger',state.nightStep);render();
 }
 // CG 死亡过渡：视野变暗 → 短暂信号杂讯 → 已销户身份页 → 自动进入结局。
 // 阶段推进在页面隐藏时暂停，避免返回浏览器后补放过期音效。
-// 变暗动画约 1 秒，字幕显示完整 2.6 秒；杂讯只是一瞬；异常档案停留 3.7 秒（在上一版本的 3.6 秒基础上增加 0.1 秒）。
-const NIGHT_DEATH_PHASE_MS={fade:2600,static:420,record:3700};
+// 变暗动画约 1 秒，字幕显示完整 2.6 秒；杂讯只是一瞬；异常档案停留 4.7 秒（本版在 3.7 秒基础上再增加 1 秒）。
+const NIGHT_DEATH_PHASE_MS={fade:2600,static:420,record:4700};
 let nightDeathTimer=null,nightDeathStarted=0,nightDeathRemaining=0;
 function nightClearDeathTimer(){if(nightDeathTimer){clearTimeout(nightDeathTimer);nightDeathTimer=null}}
 function nightDeathSchedule(){
@@ -223,14 +225,14 @@ function nightDeathSchedule(){
    state.nightDeathPhase='record';
   }else if(phase==='record'){
    state.nightDeathPhase='';
-   nightSetEnding(state.nightChoice==='misread'?'day1-sleep-death':state.nightChoice==='group'?'day1-group-death':'day1-no-repair-death');
+   nightSetEnding(state.nightChoice==='day2claim'?'day2-claim-death':state.nightChoice==='misread'?'day1-sleep-death':state.nightChoice==='group'?'day1-group-death':'day1-no-repair-death');
    return;
   }
   store();render();nightDeathSchedule();
  },ms);
 }
 function nightBeginDeathTransition(){
- if(state.storyEnding||state.nightDeathPhase||!['sleep','group','misread','ignored'].includes(state.nightChoice))return;
+ if(state.storyEnding||state.nightDeathPhase||!['sleep','group','misread','ignored','day2claim'].includes(state.nightChoice))return;
  nightCancelTimers();
  if(typeof SoundFX!=='undefined')SoundFX.stop();
  state.nightDeathPhase='fade';state.nightStep=4;state.page='night-death-transition';state.navStack=[];
@@ -290,7 +292,7 @@ function renderNightPage(){
   }else{
    // 使用真实「物业服务 → 住户登记 → 我的住户资料」同款页面，而不是另建恐怖系统 UI。
    // 原本房屋、入住日期不变；身份、认证、门牌状态悄悄发生不对劲的变化。
-   view.innerHTML=`<div class="screen app-white rr-death-residence" aria-label="异常的住户资料"><header class="app-header"><span class="icon-btn rr-death-back" aria-hidden="true">‹</span><h2>住户登记</h2><span class="right-space"></span></header><div class="scroll"><div class="doc-section"><h2 class="doc-title">我的住户资料</h2><div class="info-row"><span>房屋</span><span>3栋302室</span></div><div class="info-row"><span>身份</span><span class="rr-residence-anomaly">已销户</span></div><div class="info-row"><span>认证</span><span class="rr-residence-anomaly">已注销</span></div><div class="info-row"><span>入住日期</span><span>10月20日</span></div><div class="info-row"><span>门牌状态</span><span class="rr-residence-anomaly">异常 · 登记失效</span></div></div></div></div>`;
+   view.innerHTML=`<div class="screen app-white rr-death-residence" aria-label="异常的住户资料"><header class="app-header"><span class="icon-btn rr-death-back" aria-hidden="true">‹</span><h2>住户登记</h2><span class="right-space"></span></header><div class="scroll"><div class="doc-section"><h2 class="doc-title">我的住户资料</h2><div class="info-row"><span>房屋</span><span>3栋302室</span></div><div class="info-row"><span>身份</span><span class="rr-residence-anomaly">已销户</span></div><div class="info-row"><span>认证</span><span class="rr-residence-anomaly">已注销</span></div><div class="info-row"><span>入住日期</span><span>10月20日</span></div><div class="info-row"><span>门牌状态</span><span class="rr-residence-anomaly">${state.day===2?'已完成维修':'异常 · 登记失效'}</span></div></div></div></div>`;
   }
   nightDeathSchedule();return true;
  }
@@ -312,7 +314,7 @@ function renderNightPage(){
   const ending=state.storyEnding;
   const title='BE 01 · 亚伯';
    const copy='<p class="rr-abel-quote">「我岂是看守我兄弟的吗？」</p>';
-  view.innerHTML=nightBody(title,copy,`<button class="night-primary" onclick="openStoryNodes()">剧情回溯</button><button onclick="openEndingArchive()">查看结局图鉴</button><button onclick="returnDayOneTitle()">返回标题</button>`,'DAY 1 · 失败结局');return true;
+  view.innerHTML=nightBody(title,copy,`<button class="night-primary" onclick="openStoryNodes()">剧情回溯</button><button onclick="openEndingArchive()">查看结局图鉴</button><button onclick="returnDayOneTitle()">返回标题</button>`,state.day===2?'DAY 2 · 失败结局':'DAY 1 · 失败结局');return true;
  }
  return false;
 }

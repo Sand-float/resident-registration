@@ -28,7 +28,7 @@ function neighborMessageCount(){
 }
 function unreadGroupCount(){return Math.max(0,groupMessageCount()-(Number(state.groupReadStage)||0))}
 function unreadNeighborCount(){return Math.max(0,neighborMessageCount()-(Number(state.neighborReadStage)||0))}
-function totalWechatUnread(){if(state.day===2)return (!state.day2RulesRead?1:0)+(state.day2BurstDone&&!state.day2GroupAlertRead?1:0);return unreadGroupCount()+unreadNeighborCount()+(state.nightChoice==='browse'&&state.nightLinMessage>=1&&!state.nightLinOpenedAt?1:0)+Math.max(0,(Number(state.mimiIncoming)||0)-(Number(state.mimiRead)||0))}
+function totalWechatUnread(){if(state.day===2)return day2UnreadGroup()+day2UnreadLin();return unreadGroupCount()+unreadNeighborCount()+(state.nightChoice==='browse'&&state.nightLinMessage>=1&&!state.nightLinOpenedAt?1:0)+Math.max(0,(Number(state.mimiIncoming)||0)-(Number(state.mimiRead)||0))}
 function markGroupRead(){state.groupReadStage=groupMessageCount();store()}
 function markNeighborRead(){state.neighborReadStage=neighborMessageCount();store()}
 function isViewingTarget(target){
@@ -283,7 +283,7 @@ function profileButton(name,size='sm'){
  const label=personKey(name)==='物业通知'?'匿名发言者':clean(name);
  return `<button class="avatar-tap" title="查看${label}的资料" aria-label="查看${label}的资料" onclick="openPerson('${encodeURIComponent(name)}')">${personAvatar(name,size)}</button>`;
 }
-function openPerson(encoded){state.person=decodeURIComponent(encoded);state.personSource=['chat','members','rules'].includes(state.page)?'group':'private';go('contact-profile')}
+function openPerson(encoded){state.person=decodeURIComponent(encoded);state.personSource=['chat','day2-group','members','rules','day2-rules'].includes(state.page)?'group':'private';go('contact-profile')}
 function openDirect(encoded){
  const raw=decodeURIComponent(encoded);const person=getPerson(raw);
  if(!person.friend){notify('你们还不是微信好友');return}
@@ -477,13 +477,13 @@ function render(){
  const clockElement=document.getElementById('status-time');if(clockElement)clockElement.textContent=fictionalClock();
  if(typeof scheduleDayOneConversationReplies==='function')scheduleDayOneConversationReplies();
  if(typeof scheduleNightEvents==='function')scheduleNightEvents();
- if(state.page==='wechat'&&(state.groupAlertPending||(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.groupAlertShown)))queueMicrotask(rrQueueGroupAlert);
+ if(state.day===1&&state.page==='wechat'&&(state.groupAlertPending||(state.dayOneChoice==='group'&&state.dayOneInquiryStep===2&&!state.groupAlertShown)))queueMicrotask(rrQueueGroupAlert);
  document.body.dataset.theme=state.theme;document.body.dataset.page=state.page;
  document.querySelector('meta[name="theme-color"]')?.setAttribute('content',state.theme==='dark'?'#24252b':'#f6f6f6');
  if(priorRulesScroll!==null&&priorRulesScroll!==undefined)queueMicrotask(()=>{const pane=document.querySelector('.rules-scroll');if(pane)pane.scrollTop=priorRulesScroll});
  document.querySelector('#home-gesture').classList.toggle('light', ['intro','warning','chapter','scene'].includes(state.page)||state.page==='home'&&state.theme==='dark');
- document.querySelector('#home-gesture').style.display=['intro','warning','profile','chapter','scene','test-gateway','day2-chapter','day2-wake','night-death-transition'].includes(state.page)?'none':'flex';
- const phoneUi=!!state.phoneActivated&&!['intro','warning','profile','chapter','scene','test-gateway','story-nodes','story-endings','story-ending-detail','day-end','day2-chapter','day2-wake','day2-result','day1-night','night-plate','night-after-repair','night-danger','night-door','night-ending','night-death-transition'].includes(state.page);
+ document.querySelector('#home-gesture').style.display=['intro','warning','profile','chapter','scene','test-gateway','day2-chapter','day2-wake','night-death-transition','day2-claim-door'].includes(state.page)?'none':'flex';
+ const phoneUi=!!state.phoneActivated&&!['intro','warning','profile','chapter','scene','test-gateway','story-nodes','story-endings','story-ending-detail','day-end','day2-chapter','day2-wake','day2-result','day1-night','night-plate','night-after-repair','night-danger','night-door','night-ending','night-death-transition','day2-claim-door'].includes(state.page);
  const bar=document.querySelector('#statusbar');bar.style.display=phoneUi?'flex':'none';bar.setAttribute('aria-hidden',String(!phoneUi));
  bar.style.color=(state.theme==='dark'||['day1-night','night-danger','night-browse','night-clue','night-ending'].includes(state.page))?'#f5edf1':'#2a2b30';
  if(typeof renderDayTwoPage==='function'&&renderDayTwoPage())return;
@@ -563,7 +563,7 @@ function render(){
    return;
  }
  if(state.page==='rules'){view.innerHTML=`${header('群公告','chat')}<div class="scroll rules-scroll"><div class="doc-section"><h2 class="doc-title">${E('公告标题')}</h2><p class="doc-date">${E('公告发布信息')}</p><div class="doc-content">${E('公告正文')}</div></div></div>`;return}
- if(state.page==='property'){view.innerHTML=`${header(T('小区名称')+' · 物业服务','wechat')}<div class="scroll mini-scroll"><div class="mini-cover"><small>RESIDENTIAL SERVICE</small><h2>${E('小区名称')}</h2><p>${E('物业宣传语')}</p></div><div class="mini-pad"><div class="residence-card"><div class="tiny-title">我的房屋</div><h3>${E('主角房号')}</h3><p>${E('住户认证')}</p></div><div class="mini-card"><div class="section-title">生活服务</div><div class="mini-grid">${['住户登记','物业公告','报事报修','门禁记录'].map((t,i)=>`<button class="mini-tool" onclick="go('${['residence','rules','repairs','access'][i]}')"><span class="tool-icon">${['▤','☷','⚒','▣'][i]}</span>${t}</button>`).join('')}</div></div>${state.nightChoice==='browse'?`<div class="mini-card"><div class="section-title">报修记录</div><button class="mini-notice" onclick="go('repairs')"><b>${state.nightRepairStatus==='fixed'?'门牌标识 · 已完成维修':state.nightRepairStatus==='accepted'?'门牌标识松动 · 等待上门':state.nightRepairStatus==='pending'?'工单处理中':'报事报修'}</b><small>查看 ›</small></button></div>`:''}<div class="mini-card"><div class="section-title">最新公告</div><button class="mini-notice" onclick="openAnnouncement()"><b>${E('公告标题')}</b><small>今天</small></button></div></div></div>`;return}
+ if(state.page==='property'){view.innerHTML=`${header(T('小区名称')+' · 物业服务','wechat')}<div class="scroll mini-scroll"><div class="mini-cover"><small>RESIDENTIAL SERVICE</small><h2>${E('小区名称')}</h2><p>${E('物业宣传语')}</p></div><div class="mini-pad"><div class="residence-card"><div class="tiny-title">我的房屋</div><h3>${E('主角房号')}</h3><p>${E('住户认证')}</p></div><div class="mini-card"><div class="section-title">生活服务</div><div class="mini-grid">${['住户登记','物业公告','报事报修','门禁记录'].map((t,i)=>`<button class="mini-tool" onclick="go('${['residence','rules','repairs','access'][i]}')"><span class="tool-icon">${['▤','☷','⚒','▣'][i]}</span>${t}</button>`).join('')}</div></div>${state.nightChoice==='browse'?`<div class="mini-card"><div class="section-title">报修记录</div><button class="mini-notice" onclick="go('repairs')"><b>${state.nightRepairStatus==='fixed'?'门牌标识 · 已完成维修':state.nightRepairStatus==='accepted'?'门牌标识松动 · 等待上门':state.nightRepairStatus==='pending'?'工单处理中':'报事报修'}</b><small>查看 ›</small></button></div>`:''}<div class="mini-card"><div class="section-title">最新公告</div><button class="mini-notice" onclick="openAnnouncement()"><b>${E('公告标题')}</b><small>${state.day===2?'昨天':'今天'}</small></button></div></div></div>`;return}
  if(state.page==='repairs'){
    if(typeof renderNightRepair==='function'&&renderNightRepair())return;
    view.innerHTML=`${header('报事报修','property')}<div class="scroll native-shell"><div class="native-section-label">报事报修</div><div class="empty-state">暂无报修记录。</div></div>`;return;
@@ -640,7 +640,7 @@ function msg(name,body,cls,mine=false){
   // All chat-avatar taps share the same WeChat profile & moments permissions as contacts.
   const personName=mine?'我':name;
   const iconHtml=personAvatar(personName);
-  return `<div class="msg-row ${mine?'mine':''}"><button type="button" class="avatar-tap msg-avatar-btn" onclick="openPerson('${encodeURIComponent(personName)}')" aria-label="查看${personKey(personName)==='物业通知'?'匿名发言者':clean(personName)}的资料">${iconHtml}</button><div class="msg-bubble-wrap">${mine||state.page!=='chat'||personKey(name)==='物业通知'?'':`<div class="msg-name">${clean(groupMemberLabel(name))}</div>`}<div class="msg-bubble">${clean(body)}</div></div></div>`;
+  return `<div class="msg-row ${mine?'mine':''}"><button type="button" class="avatar-tap msg-avatar-btn" onclick="openPerson('${encodeURIComponent(personName)}')" aria-label="查看${personKey(personName)==='物业通知'?'匿名发言者':clean(personName)}的资料">${iconHtml}</button><div class="msg-bubble-wrap">${mine||!['chat','day2-group'].includes(state.page)||personKey(name)==='物业通知'?'':`<div class="msg-name">${clean(groupMemberLabel(name))}</div>`}<div class="msg-bubble">${clean(body)}</div></div></div>`;
 }
 function chooseAvatar(i){
  state.avatar=i;store();
@@ -720,6 +720,7 @@ function go(p){
  if(state.day===2 && p==='chat')p='day2-group';
  if(state.day===2 && p==='rules')p='day2-rules';
  if(state.day===2 && p==='access')p='day2-access';
+ if(state.day===2 && p==='direct-chat' && state.dmPerson==='小林')p='day2-lin';
  if(state.page==='night-death-transition')return;
  if(rrAnonLocked())return;
  if(['day1-night','night-after-repair','night-ending','day-end','intro'].includes(p)&&typeof SoundFX!=='undefined')SoundFX.stop();
@@ -770,7 +771,7 @@ function goBack(){
  if(state.page==='night-death-transition'||rrAnonLocked())return;
  if(typeof nightPauseLinView==='function'&&state.nightLinActiveSince)nightPauseLinView();
  cancelNarrative();
- if(['chat','day2-group','neighbor','direct-chat','mimi-story','anonymous-chat'].includes(state.page)){
+ if(['chat','day2-group','day2-lin','neighbor','direct-chat','mimi-story','anonymous-chat'].includes(state.page)){
   const from=state.page;state.navStack=[];state.tab='微信';state.page='wechat';store();render();
   rrQueueGroupAlert();
   scheduleGroupNarrative();scheduleNeighborNarrative();scheduleGroupReaction();return;}

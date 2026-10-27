@@ -33,7 +33,7 @@ const RR_ENDINGS=[
  {id:'day1-survivor',name:'第一夜 · 幸存',kind:'survival',chapter:1,summary:'门牌重新固定在 302 门外。你活过了第一夜。'},
  {id:'day1-no-repair-death',name:'BE 01 · 亚伯',kind:'bad',chapter:1,summary:'「我岂是看守我兄弟的吗？」'}
 ];
-function rrEndingKey(id){return ['day1-no-repair-death','day1-sleep-death','day1-group-death'].includes(id)?'day1-no-repair-death':id;}
+function rrEndingKey(id){return ['day1-no-repair-death','day1-sleep-death','day1-group-death','day2-claim-death'].includes(id)?'day1-no-repair-death':id;}
 function rrDefaultArchive(){return {version:RR_ARCHIVE_VERSION,nodes:{},branches:{},endings:{}}}
 function rrReadArchive(){
  try{
