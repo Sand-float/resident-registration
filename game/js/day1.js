@@ -81,7 +81,7 @@ function scheduleDayOneMimiIncoming(){
  const due=Number(state.mimiIncomingAt)+(state.mimiIncoming+1)*Math.max(950,Math.min(2200,Number(state.messageSpeed)||2200));
  dayOneIncomingTimer=setTimeout(()=>{
   dayOneIncomingTimer=null;if(state.mimiIncoming>=2)return;
-  state.mimiIncoming++;if(state.page==='mimi-story'||(state.page==='direct-chat'&&state.person==='米米'))state.mimiRead=state.mimiIncoming;
+  state.mimiIncoming++;if(state.page==='mimi-story'||(state.page==='direct-chat'&&state.dmPerson==='米米'))state.mimiRead=state.mimiIncoming;
   store();if(!['mimi-story','direct-chat'].includes(state.page))banner(T('Day1闺蜜开场'+state.mimiIncoming),'米米','mimi-story');
   else if(typeof SoundFX!=='undefined')SoundFX.play('message');
   render();scheduleDayOneMimiIncoming();

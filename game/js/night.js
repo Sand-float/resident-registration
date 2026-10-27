@@ -186,7 +186,7 @@ function nightContinueDoor(){
  store();nightSceneSound('repair',state.nightDoorStep);render();
 }
 function nightBody(title,content,actions,eyebrow='锦苑花庭'){
- return `<div class="night-screen"><div class="night-top"><button onclick="goHome()" aria-label="返回桌面">‹</button><span>${state.page==='day1-night'?'':fictionalClock()+' · '}${clean(eyebrow)}</span></div><div class="night-scroll"><span class="night-kicker">THE FIRST NIGHT</span><h1>${clean(title)}</h1><div class="night-copy">${content}</div><div class="night-actions">${actions}</div></div></div>`;
+ return `<div class="night-screen"><div class="night-top"><button onclick="goHome()" aria-label="返回桌面">‹</button><span>${['day1-night','night-ending'].includes(state.page)?'':fictionalClock()+' · '}${clean(eyebrow)}</span></div><div class="night-scroll"><span class="night-kicker">THE FIRST NIGHT</span><h1>${clean(title)}</h1><div class="night-copy">${content}</div><div class="night-actions">${actions}</div></div></div>`;
 }
 function beginNightDanger(kind){
  if(!['group','sleep'].includes(kind))return;

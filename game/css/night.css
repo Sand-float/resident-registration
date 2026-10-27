@@ -97,4 +97,4 @@
 .rr-death-residence .info-row span.rr-residence-anomaly:last-child{color:#952c3d!important;font-weight:600;letter-spacing:.01em}
 @keyframes rrRecordAppear{from{opacity:.1}to{opacity:1}}
 /* 结局「亚伯」：留白与一句典故，避免重复解释 CG 的死亡过程。 */
-.rr-abel-quote{margin:28px 0 52px!important;text-align:left;font-size:16px;line-height:2.3;letter-spacing:.09em;color:#e6d7dc;font-weight:400;}
+.rr-abel-quote{margin:28px 0 52px!important;text-align:left;font-size:14px;line-height:2.3;letter-spacing:.09em;color:#aa9fa8;font-weight:400;}

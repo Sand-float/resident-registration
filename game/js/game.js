@@ -336,7 +336,7 @@ function linEntries(){
  }
  return a;
 }
-function chatTranscript(key){return (key==='小林'?linEntries():directEntries(key)).map(m=>m.system?`<div class="day-divide rr-withdrawn">${clean(m.body)}</div>`:msg(m.speaker,m.body,'friend',m.mine)).join('')}
+function chatTranscript(key){return (key==='小林'?linEntries():key==='米米'?mimiEntries():directEntries(key)).map(m=>m.system?`<div class="day-divide rr-withdrawn">${clean(m.body)}</div>`:msg(m.speaker,m.body,'friend',m.mine)).join('')}
 function groupEntries(){
  const a=[];
  if(state.stage>=1)a.push({speaker:T('群聊1发言人'),body:T('公告正文')});
@@ -440,7 +440,11 @@ function openWechatRow(key){
  if(key==='anonymous')rrOpenAnonymous();
  else if(key==='group')go('chat');
  else if(key==='service')go('service-notices');
- else if(key==='米米'&&state.dayOneAsked&&typeof dayOneAllDone==='function'&&dayOneAllDone())go('mimi-story');else openDirect(encodeURIComponent(key));
+ else if(key==='米米'){if(state.dayOneAsked&&typeof dayOneAllDone==='function'&&dayOneAllDone())go('mimi-story');else{state.dmPerson='米米';go('direct-chat')}}else openDirect(encodeURIComponent(key));
+}
+// 朋友圈统一占位配图，日后可替换为每条动态自己的照片。
+function rrMomentPlaceholder(){
+ return '<div class="rr-moment-placeholder" role="img" aria-label="朋友圈配图待补"><svg viewBox="0 0 50 38" width="35" height="27" aria-hidden="true"><rect x="3" y="3" width="44" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="15" cy="13" r="3.5" fill="currentColor" opacity=".55"/><path d="M7 29l11-11 7 6 6-9 12 14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg><small>配图待补</small></div>';
 }
 function visibleMoments(){
  // Share one data source with contact profile moments rather than a partial handwritten feed.
@@ -449,7 +453,7 @@ function visibleMoments(){
   return {name,text:post};
  }).filter(x=>x.name&&x.text&&getPerson(x.name).friend);
 }
-const RR_SCENE_ASSETS=['game/assets/plate_loose.webp','game/assets/foyer_closed.webp','game/assets/foyer_ajar.webp','game/assets/boxes.svg','game/assets/door.svg','game/assets/meal.svg','game/assets/gallery/猫咪.jpg'];
+const RR_SCENE_ASSETS=['game/assets/plate_loose.webp','game/assets/foyer_closed.webp','game/assets/foyer_ajar.webp','game/assets/boxes.svg','game/assets/door.svg','game/assets/meal.svg','game/assets/gallery/猫咪.jpg','game/assets/gallery/工单截图.png'];
 const rrSceneCache=[];
 function rrPreloadScenes(){for(const src of RR_SCENE_ASSETS){const img=new Image();img.decoding='async';img.src=src;img.decode?.().catch(()=>{});rrSceneCache.push(img)}}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',rrPreloadScenes,{once:true});else rrPreloadScenes();
@@ -580,17 +584,18 @@ function render(){
    const person=getPerson(state.person);
    if(!person.friend){goBack();notify('仅好友可查看朋友圈');return}
    const text=person.moment;
-   view.innerHTML=`${header('朋友圈','contact-profile')}<div class="scroll friend-moments-view moments-full"><div class="moment-profile-cover">${personAvatar(person.key,'lg')}<div><h2>${clean(person.display)}</h2><p>${clean(person.bio||'')}</p></div></div>${text?`<article class="moment-entry">${profileButton(person.key)}<div class="moment-post"><button class="moment-author" onclick="openPerson('${encodeURIComponent(state.person)}')">${clean(person.display)}</button><p>${clean(text)}</p><small>昨天</small></div></article>`:'<p class="profile-note moment-empty">暂时还没有动态。</p>'}</div>`;
+   view.innerHTML=`${header('朋友圈','contact-profile')}<div class="scroll friend-moments-view moments-full"><div class="moment-profile-cover">${personAvatar(person.key,'lg')}<div><h2>${clean(person.display)}</h2><p>${clean(person.bio||'')}</p></div></div>${text?`<article class="moment-entry">${profileButton(person.key)}<div class="moment-post"><button class="moment-author" onclick="openPerson('${encodeURIComponent(state.person)}')">${clean(person.display)}</button><p>${clean(text)}</p>${rrMomentPlaceholder()}<small>昨天</small></div></article>`:'<p class="profile-note moment-empty">暂时还没有动态。</p>'}</div>`;
    return;
  }
  if(state.page==='direct-chat'){
    const who=state.dmPerson||'妈妈';
+   if(who==='米米'&&state.mimiRead<state.mimiIncoming){state.mimiRead=state.mimiIncoming;store();}
    view.innerHTML=`<div class="screen chat-screen"><div class="page-head"><div class="head-left"><button class="back-btn" onclick="goBack()">‹</button><h2>${clean(contactDisplay(who))}</h2></div><button class="icon-btn" onclick="openPerson('${encodeURIComponent(who)}')">⋯</button></div><div class="scroll"><div class="chat-messages">${chatTranscript(who)}</div></div>${who==='小林'&&typeof nightLinChatFooter==='function'?nightLinChatFooter():'<div class="chat-compose dm-compose"><span>⊕</span><input disabled placeholder="当前没有可发送的消息"/><span>☺</span></div>'}</div>`;
    return;
  }
  if(state.page==='moments'){
    const posts=visibleMoments();
-   view.innerHTML=`${header('朋友圈','wechat')}<div class="scroll friend-moments-view moments-full"><div class="moment-cover"><div class="moment-feed-heading"><div><h2>朋友圈</h2><small>看看大家最近分享的生活。</small></div>${personAvatar('我')}</div></div>${posts.map(x=>`<article class="moment-entry">${profileButton(x.name)}<div class="moment-post"><button class="moment-author" onclick="openPerson('${encodeURIComponent(x.name)}')">${clean(contactDisplay(personKey(x.name)))}</button><p>${clean(x.text)}</p><small>昨天</small></div></article>`).join('')||'<p class="profile-note moment-empty">好友还没有发布新动态。</p>'}</div>`;return;
+   view.innerHTML=`${header('朋友圈','wechat')}<div class="scroll friend-moments-view moments-full"><div class="moment-cover"><div class="moment-feed-heading"><div><h2>朋友圈</h2><small>看看大家最近分享的生活。</small></div>${personAvatar('我')}</div></div>${posts.map(x=>`<article class="moment-entry">${profileButton(x.name)}<div class="moment-post"><button class="moment-author" onclick="openPerson('${encodeURIComponent(x.name)}')">${clean(contactDisplay(personKey(x.name)))}</button><p>${clean(x.text)}</p>${rrMomentPlaceholder()}<small>昨天</small></div></article>`).join('')||'<p class="profile-note moment-empty">好友还没有发布新动态。</p>'}</div>`;return;
  }
  
  if(state.page==='phone'){
@@ -604,7 +609,7 @@ function render(){
  }
  if(state.page==='gallery'){
    const items=rrGalleryItems();
-   view.innerHTML=`${header('相册','home')}<div class="scroll native-shell rr-gallery-shell"><div class="native-section-label">最近项目 · ${items.length} 张照片</div><div class="native-gallery rr-image-gallery">${items.map((item,i)=>`<button class="native-photo rr-photo-thumb" onclick="state.selectedPhoto=${i};go('photo-preview')"><img src="${item.src}" alt="${clean(item.name)}" loading="eager" decoding="async"><span>${clean(item.name)}</span></button>`).join('')}</div></div>`;return;
+   view.innerHTML=`${header('相册','home')}<div class="scroll native-shell rr-gallery-shell"><div class="native-section-label">最近项目 · ${items.length} 张照片</div><div class="native-gallery rr-image-gallery">${items.map((item,i)=>`<button class="native-photo rr-photo-thumb" onclick="state.selectedPhoto=${i};go('photo-preview')"><img src="${item.src}" alt="${clean(item.name)}" loading="eager" decoding="async" fetchpriority="high"><span>${clean(item.name)}</span></button>`).join('')}</div></div>`;return;
  }
  if(state.page==='photo-preview'){
    const items=rrGalleryItems();const which=items[Math.min(items.length-1,Math.max(0,state.selectedPhoto||0))]||items[0];
