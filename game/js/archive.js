@@ -50,7 +50,7 @@ function rrCloneState(){const snapshot=JSON.parse(JSON.stringify(state));snapsho
 let rrRestoring=false;
 let rrArchiveReturn='intro';
 function rememberStoryMilestones(){
- if(rrRestoring||!state.playerId||!state.phoneActivated||!state.storyRunId)return;
+ if(rrRestoring||state.day!==1||!state.playerId||!state.phoneActivated||!state.storyRunId)return;
  const archive=rrReadArchive();let dirty=false;
  if(!state.storyCaptured||typeof state.storyCaptured!=='object')state.storyCaptured={};
  for(const node of RR_NODES){

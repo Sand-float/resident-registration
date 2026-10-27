@@ -8,7 +8,8 @@ const NIGHT_EVIDENCE={
  oldticket:{source:'物业服务 · 历史工单',title:'短暂出现的历史工单',text:'物业服务中闪过一张更早的 302 室工单，联系人姓林。重新打开后却找不到了。'},
  access:{source:'物业服务 · 门禁记录',title:'异常门禁记录',text:'门禁记录显示，昨日深夜三栋有一次「未识别进入」，来源标注为未登记设备。'},
  body:{source:'手机桌面',title:'自行出现的应用',text:'手机桌面多出了「身体状态」，里面记录了个人信息和身体数据。'},
- archive:{source:'物业服务 · 历史记录',title:'有意被隐藏的记录',text:'302 室一张旧工单一闪而过。它没有出现在可查询的工单列表里。'}
+ archive:{source:'物业服务 · 历史记录',title:'有意被隐藏的记录',text:'302 室一张旧工单一闪而过。它没有出现在可查询的工单列表里。'},
+ day2record:{source:'门禁记录 / 相册 · 维修工单',title:'对不上的时间',text:'门禁里未识别进入的时间是10月23日23:44，而保存的门牌工单属于10月24日深夜的维修。两条记录并非同一次事件。'}
 };
 function nightRecordEvidence(id){
  if(!NIGHT_EVIDENCE[id])return;
@@ -246,7 +247,7 @@ function nightSetEnding(id){
  if(state.storyEnding)return;
  nightCancelTimers();if(typeof SoundFX!=='undefined')SoundFX.stop();state.storyEnding=id;state.nightStep=4;state.dayOneFinished=true;
  state.page=id==='day1-survivor'?'day-end':'night-ending';state.navStack=[];
- store();if(typeof rrSaveEnding==='function')rrSaveEnding(id);render();
+ store();if(typeof rrSaveEnding==='function')rrSaveEnding(id);if(id==='day1-survivor'){day2Prepare(false);return}render();
 }
 // Scene sound cues are triggered by user navigation, not render(), to avoid repeat on refresh.
 function nightSceneSound(route,step){
@@ -260,7 +261,7 @@ function rrCG(which,caption,lines,button,label,anim='still'){
 }
 function renderNightPage(){
  if(state.page==='night-plate'){
-  view.innerHTML=rrCG('loose','302 室 · 门外', '你走到房门外。<br>302 的门牌斜挂着，只剩左上角一颗螺丝还固定在墙上。<br>另外三处固定点已经松脱。','nightConfirmPlate()','拍下门牌，回去填写报修','still');
+  view.innerHTML=rrCG('loose','302 室 · 门外', '你走到房门外。<br>刚才回家经过这里时，好像并没有注意到门牌出了问题。<br>302 的门牌斜挂着，只剩左上角一颗螺丝还固定在墙上。<br>另外三处固定点已经松脱。','nightConfirmPlate()','拍下门牌，回去填写报修','still');
   return true;
  }
  if(state.page==='day1-night'){

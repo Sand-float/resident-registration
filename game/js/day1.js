@@ -3,9 +3,9 @@
  * Core UI and save state are supplied by game.js.
  */
 const DAY1_TASKS=[
- {id:'boxes',title:'整理纸箱',hint:'把客厅里的杂物整理一下',image:'game/assets/boxes.svg',action:'开始整理',cost:'体力 −12',costClass:'minus',changes:{stamina:-12,stress:2,mood:5}},
- {id:'door',title:'检查门窗',hint:'确认门锁与窗扣正常',image:'game/assets/door.svg',action:'检查门窗',cost:'压力 −2',costClass:'plus',changes:{stamina:-2,stress:-2,mood:2}},
- {id:'food',title:'简单吃点东西',hint:'忙了一天，先垫垫肚子',image:'game/assets/meal.svg',action:'开始用餐',cost:'饱腹感 +25',costClass:'plus',changes:{stamina:5,satiety:25,mood:3}}
+ {id:'boxes',title:'整理纸箱',hint:'把客厅里的杂物整理一下',image:'game/assets/boxes.svg',action:'开始整理',cost:'体力 −12',costClass:'minus',changes:{stamina:-12,stress:2}},
+ {id:'door',title:'检查门窗',hint:'确认门锁与窗扣正常',image:'game/assets/door.svg',action:'检查门窗',cost:'压力 −2',costClass:'plus',changes:{stamina:-2,stress:-2}},
+ {id:'food',title:'简单吃点东西',hint:'忙了一天，先垫垫肚子',image:'game/assets/meal.svg',action:'开始用餐',cost:'饱腹感 +25',costClass:'plus',changes:{stamina:5,satiety:25}}
 ];
 APP_DESKTOP_ICONS['身体状态']='game/assets/status.svg';
 
@@ -154,7 +154,7 @@ function renderDayOnePage(){
  const page=state.page;
  if(page==='body-status'){
   if(!state.dayOneBodySeen){state.dayOneBodySeen=true;state.bodyClueShownOnce=true;nightRecordEvidence('body')}else if(!state.investigation?.body){state.investigation=state.investigation||{};state.investigation.body=Date.now();store()}
-  view.innerHTML=`${d1Header('身体状态')}<div class="scroll d1-flat-scroll"><div class="d1-eyebrow">个人状态 · Day 1</div><div class="d1-status-identity"><img src="game/assets/status.svg" alt=""/><div><strong>${clean(state.playerId||'新住户')}</strong><small>锦苑花庭 · 302室</small></div></div><div class="d1-status-intro">忙了一整天，身体还在努力适应搬家的节奏。</div>${d1Metric('体力',state.stamina,'#80bba5','整理物品和行动会消耗体力')}${d1Metric('饱腹感',state.satiety,'#dba979','吃东西可以补充饱腹感')}${d1Metric('心情',state.mood,'#bb98c8','今晚发生的事情可能影响心情')}${d1Metric('精神压力',state.stress,'#d48c91','数值越高，压力越大')}<p class="d1-fineprint">以上为游戏角色的虚构状态数值。</p>${(!state.dayOneAsked&&!state.dayOneChoice&&!state.nightChoice)?`<button class="d1-primary" onclick="go('day1-choose')">关于这些数字，要问问谁吗？ →</button><p class="d1-flow-caption">也可以先返回桌面，再决定下一步。</p>`:''}</div></div>`;
+  view.innerHTML=`${d1Header('身体状态')}<div class="scroll d1-flat-scroll"><div class="d1-eyebrow">个人状态 · Day ${state.day}</div><div class="d1-status-identity"><img src="game/assets/status.svg" alt=""/><div><strong>${clean(state.playerId||'新住户')}</strong><small>锦苑花庭 · 302室</small></div></div><div class="d1-status-intro">${state.day===2?'昨晚几乎没睡踏实。早上起来，比想象中更饿。':'忙了一整天，身体还在努力适应搬家的节奏。'}</div>${d1Metric('体力',state.stamina,'#80bba5','整理物品和行动会消耗体力')}${d1Metric('饱腹感',state.satiety,'#dba979','吃东西可以补充饱腹感')}${d1Metric('精神压力',state.stress,'#d48c91','数值越高，压力越大')}<p class="d1-fineprint">以上为游戏角色的虚构状态数值。</p>${(!state.dayOneAsked&&!state.dayOneChoice&&!state.nightChoice)?`<button class="d1-primary" onclick="go('day1-choose')">关于这些数字，要问问谁吗？ →</button><p class="d1-flow-caption">也可以先返回桌面，再决定下一步。</p>`:''}</div></div>`;
   return true;
  }
  if(page==='notes'&&state.dayOneUnlocked){
@@ -227,7 +227,7 @@ function chooseDayOneInquiry(kind){
 function replyDayOneMimi(choice){
  if(!state.dayOneAsked||!dayOneAllDone()){notify('先完成今晚的事');goHome();return}
  if(state.dayOneMimiStep!==0)return;
- state.dayOneMimiStep=1;state.dayOneMimiChoice=choice;state.dayOneMimiSentAt=Date.now();state.mood=dayOneClamp(state.mood+3);store();render();scheduleDayOneConversationReplies();
+ state.dayOneMimiStep=1;state.dayOneMimiChoice=choice;state.dayOneMimiSentAt=Date.now();store();render();scheduleDayOneConversationReplies();
 }
 function finishDayOneMimi(){
  if(state.dayOneMimiStep!==2)return;
